@@ -1,0 +1,140 @@
+# Turkish Profanity Detection Ayarları
+
+# API ayarları
+api:
+  url: "https://zb9cned50.localto.net/api/swear/detect"
+  timeout: 30000 # milisaniye cinsinden (30 saniye)
+  
+  # Yapay zeka ayarları
+  ai:
+    use: true
+    model: "gpt-4.5"
+    confidence: 0.1
+
+# Küfür tespit edildiğinde uygulanacak işlemler
+actions:
+  # Mesajı engellesin mi?
+  cancel-message: true
+  
+  # Log işlemleri
+  log:
+    enabled: true
+    console: true
+    file: true
+    file-path: "logs/profanity.log" # Log dosyası yolu (plugins klasöründen itibaren)
+    
+  # Discord webhook entegrasyonu
+  discord:
+    enabled: false
+    webhook-url: ""  # Discord webhook URL'si
+    username: "Küfür Koruması"
+    avatar-url: ""  # Webhook avatar URL'si (boş bırakılabilir)
+    embed-color: "#FF0000"
+    notify-severity-level: 3  # Bu seviye ve üzeri küfürler Discord'a bildirilecek (1-5)
+    
+  # Küfür eden oyuncuya uygulanacak komutlar (örnekler)
+  commands:
+    # %player% = oyuncu adı
+    # %message% = gönderilen mesaj
+    enabled: true
+    list:
+      - "warn %player% Uygunsuz dil kullanımı"
+      # - "tempban %player% 1h Küfür/Hakaret"
+      # - "broadcast &c%player% &fküfür ettiği için uyarıldı"
+
+# Küfür düzeylerine göre ayrı işlemler (1 = hafif, 5 = ağır)
+severity-actions:
+  enabled: true
+  levels:
+    1:
+      commands:
+        - "warn %player% Hafif uygunsuz dil kullanımı"
+    2:
+      commands:
+        - "warn %player% Uygunsuz dil kullanımı"
+    3:
+      commands:
+        - "warn %player% Orta düzeyde uygunsuz dil kullanımı"
+        - "mute %player% 10m Küfür/Hakaret"
+    4:
+      commands:
+        - "warn %player% Ağır küfür kullanımı"
+        - "mute %player% 30m Küfür/Hakaret"
+    5:
+      commands:
+        - "warn %player% Çok ağır küfür kullanımı"
+        - "tempban %player% 1h Küfür/Hakaret"
+
+# İstatistik ve veri depolama ayarları
+statistics:
+  enabled: true
+  # Veri saklama süresi (gün olarak, 0 = sınırsız)
+  data-retention-days: 30
+  # Küfür istatistiklerini kaydetme türü (mysql, sqlite, file)
+  storage-type: "mysql"
+  # MySQL bağlantı bilgileri (storage-type: mysql ise kullanılır)
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "minecraft"
+    username: "root"
+    password: "password"
+    table-prefix: "tpd_"
+  # SQLite veri depolama dosyası (storage-type: sqlite ise kullanılır)
+  sqlite:
+    file: "database.db"
+
+# GUI ayarları
+gui:
+  admin-menu:
+    title: "&8[&c⚠&8] &fKüfür Koruma Paneli"
+    rows: 5
+  
+  stats-menu:
+    title: "&8[&b📊&8] &fKüfür İstatistikleri"
+    rows: 5
+    items-per-page: 36
+
+# İzin ayarları
+permissions:
+  # Bu izne sahip oyuncuların mesajları kontrol edilmez
+  bypass: "turkishprofanitydetection.bypass"
+  # Bu izne sahip oyuncular komutları görebilir
+  commands: "turkishprofanitydetection.commands"
+  # Bu izne sahip oyuncular admin özelliklerini kullanabilir
+  admin: "turkishprofanitydetection.admin"
+  # Bu izne sahip oyuncular istatistikleri görebilir
+  statistics: "turkishprofanitydetection.statistics"
+
+# Güvenlik ayarları
+security:
+  # Hızlı mesaj göndermeye karşı koruma
+  rate-limit:
+    enabled: true
+    max-messages: 5     # Belirtilen sürede maksimum mesaj sayısı
+    time-window: 10     # Saniye cinsinden süre
+    action: "mute %player% 5m Spam"  # Limit aşıldığında uygulanacak komut
+  
+  # IP kısıtlamaları - API'nin sadece belirli IP'lerden erişilmesini sağlar
+  ip-whitelist:
+    enabled: false
+    ips:
+      - "127.0.0.1"
+      - "localhost"
+
+# Mesaj ayarları
+messages:
+  prefix: "&8[&cKüfür Koruması&8] &f"
+  blocked: "&cMesajınız uygunsuz içerik nedeniyle engellendi."
+  admin-alert: "&c%player% &fmuhtemel küfür kullandı: &7%message%"
+  reload: "&aEklenti yeniden yüklendi!"
+  no-permission: "&cBu komutu kullanmak için yetkiniz yok."
+  
+  # Admin komutları için mesajlar
+  admin:
+    stats-header: "&6%player% &fiçin küfür istatistikleri:"
+    stats-line: "&7- &f%date%: &c%word% &7(%severity% seviye)"
+    no-stats: "&7%player% için kayıtlı küfür istatistiği bulunamadı."
+    cleared-stats: "&a%player% için tüm küfür istatistikleri temizlendi."
+    warning-sent: "&a%player% adlı oyuncuya uyarı gönderildi."
+    player-not-found: "&cBelirtilen oyuncu bulunamadı."

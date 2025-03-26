@@ -1,0 +1,27 @@
+name: TurkishProfanityDetection
+version: '0.0.3'
+main: kynux.cloud.turkishProfanityDetection.TurkishProfanityDetection
+description: 'Türkçe küfür ve hakaret tespit eklentisi'
+authors: [KynuxCloud]
+softdepend: [PlaceholderAPI]
+
+commands:
+  turkishprofanity:
+    description: Turkish Profanity Detection eklentisi ana komutu
+    aliases: [tpd, küfürtespit]
+    usage: /tpd <help|reload|version>
+    permission: turkishprofanitydetection.commands
+
+permissions:
+  turkishprofanitydetection.bypass:
+    description: Küfür filtresini atlamak için izin
+    default: op
+  turkishprofanitydetection.commands:
+    description: Eklenti komutlarını kullanmak için izin
+    default: op
+  turkishprofanitydetection.admin:
+    description: Yönetici bildirimlerini almak için izin
+    default: op
+  turkishprofanitydetection.statistics:
+    description: İstatistik görüntüleme izni
+    default: op
