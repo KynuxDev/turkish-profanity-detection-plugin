@@ -3,7 +3,7 @@
   <h1 align="center">Turkish Profanity Detection Plugin</h1>
   <p align="center">
     <b>Minecraft sunucunuz için gelişmiş Türkçe küfür ve hakaret tespit sistemi</b><br>
-    <small>Versiyon: 1.0.0 | Minecraft 1.16+</small>
+    <small>Versiyon: 0.0.3 | Minecraft 1.16+</small>
   </p>
 </p>
 
