@@ -126,14 +126,17 @@ public class DatabaseManager {
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
         
-        try {
-            dataSource = new HikariDataSource(hikariConfig);
-            createTables();
-            logger.info("MySQL veritabanına başarıyla bağlanıldı: " + host + ":" + port + "/" + database);
-        } catch (Exception e) {
-            logger.severe("MySQL bağlantısı kurulamadı: " + e.getMessage());
+    try {
+        dataSource = new HikariDataSource(hikariConfig);
+        createTables();
+        logger.info("MySQL veritabanına başarıyla bağlanıldı: " + host + ":" + port + "/" + database);
+    } catch (Exception e) {
+        String errorMessage = (e != null) ? (e.getMessage() != null ? e.getMessage() : "Bilinmeyen hata") : "Null hata nesnesi";
+        logger.severe("MySQL bağlantısı kurulamadı: " + errorMessage);
+        if (e != null) {
             e.printStackTrace();
         }
+    }
     }
     
     /**

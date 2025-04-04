@@ -55,8 +55,6 @@ public class ProfanityApiService {
         // IP güvenlik ayarları
         this.ipWhitelistEnabled = config.getBoolean("security.ip-whitelist.enabled", false);
         this.ipWhitelist = config.getStringList("security.ip-whitelist.ips");
-        
-        // OkHttp istemcisini oluştur - sabit timeout süresi
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(timeout, TimeUnit.MILLISECONDS)
                 .readTimeout(timeout, TimeUnit.MILLISECONDS)
