@@ -4,9 +4,9 @@
 
 **Minecraft için gelişmiş Türkçe küfür ve hakaret tespit sistemi**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/KynuxCloud/TurkishProfanityDetection/releases)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/KynuxDev/turkish-profanity-detection-plugin/releases)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.8--1.20%2B-green.svg)](https://www.minecraft.net)
-[![Discord](https://img.shields.io/discord/1234567890?color=5865F2&label=discord&logo=discord&logoColor=white)](https://discord.kynux.cloud)
+[![Discord](https://img.shields.io/discord/1279438641684283434?color=5865F2&label=discord&logo=discord&logoColor=white)](https://discord.gg/wCK5dVSY2n)
 
 ![Banner](https://i.imgur.com/placeholder-logo.png)
 
@@ -79,7 +79,7 @@
 
 ## 🚀 Kurulum
 
-1. [TurkishProfanityDetection-1.0.0.jar](https://kynux.cloud/downloads/TurkishProfanityDetection-1.0.0.jar) dosyasını indirin
+1. [TurkishProfanityDetection-1.0.0.jar](https://github.com/KynuxDev/turkish-profanity-detection-plugin/releases/tag/V1.0.0) dosyasını indirin
 2. Dosyayı sunucunuzun `plugins` klasörüne yerleştirin
 3. Sunucuyu yeniden başlatın
 4. İsteğe bağlı olarak `config.yml` dosyasını özelleştirin
@@ -231,8 +231,8 @@ Bu hata şu nedenlerden kaynaklanabilir:
 <p>
 
 Tüm öneri ve hata raporlarınızı şu kanallarda paylaşabilirsiniz:
-- [GitHub Issues](https://github.com/KynuxCloud/TurkishProfanityDetection/issues)
-- [Discord Sunucumuz](https://discord.kynux.cloud)
+- [GitHub Issues](https://github.com/KynuxDev/turkish-profanity-detection-plugin/issues)
+- [Discord Sunucumuz](https://discord.gg/wCK5dVSY2n)
 - Email: support@kynux.cloud
 
 </p>
@@ -251,7 +251,7 @@ Tüm öneri ve hata raporlarınızı şu kanallarda paylaşabilirsiniz:
   
   Made with ❤️ by [KynuxCloud](https://kynux.cloud)
   
-  [![Discord](https://img.shields.io/discord/1234567890?color=5865F2&label=discord&logo=discord&logoColor=white)](https://discord.kynux.cloud)
+[![Discord](https://img.shields.io/discord/1279438641684283434?color=5865F2&label=discord&logo=discord&logoColor=white)](https://discord.gg/wCK5dVSY2n)
   [![Website](https://img.shields.io/badge/website-kynux.cloud-blue)](https://kynux.cloud)
   
 </div>
