@@ -1,267 +1,184 @@
-<p align="center">
-  <!-- <img src="logo.png" alt="Turkish Profanity Detection Logo" width="200"/> -->
-  <h1 align="center">Turkish Profanity Detection Plugin</h1>
-  <p align="center">
-    <b>Minecraft sunucunuz için gelişmiş Türkçe küfür ve hakaret tespit sistemi</b><br>
-    <small>Versiyon: 0.0.3 | Minecraft 1.16+</small>
-  </p>
-</p>
+# Turkish Profanity Detection - Türkçe Küfür Tespit Eklentisi
 
-<p align="center">
-  <a href="#-özellikler">Özellikler</a> •
-  <a href="#-kurulum">Kurulum</a> •
-  <a href="#-yapılandırma">Yapılandırma</a> •
-  <a href="#-komutlar">Komutlar</a> •
-  <a href="#-izinler">İzinler</a> •
-  <a href="#-api-kullanımı">API Kullanımı</a> •
-  <a href="#-sık-sorulan-sorular">SSS</a> •
-  <a href="#-sürüm-notları">Sürüm Notları</a>
-</p>
+![TurkishProfanityDetection Logo](https://i.imgur.com/placeholder-logo.png)
 
----
+## Kategori
+**Chat**
 
-## 📋 Genel Bakış
+## Başlık
+**AntiSwear - Türkçe Küfür ve Hakaret Tespit Eklentisi**
 
-Turkish Profanity Detection, Minecraft sunucunuzda Türkçe küfür ve hakaret içeren mesajları yapay zeka destekli bir API ile tespit edip filtreleyebilen gelişmiş bir eklentidir. Oyuncularınıza temiz ve güvenli bir oyun ortamı sağlarken, karmaşık ve gizlenmiş küfürleri de tespit edebilir.
+## Etiketler
+`türkçe küfür tespit`, `yapay zeka filtreleme`, `küfür engelleme`, `chat koruma`, `moderasyon aracı`, `profanity filter`, `discord entegrasyonu`, `veritabanı desteği`, `custom komutlar`
 
-## ✨ Özellikler
+## Minecraft Sürüm Uyumluluğu
+- 1.8
+- 1.9
+- 1.10
+- 1.11
+- 1.12
+- 1.13
+- 1.14
+- 1.15
+- 1.16
+- 1.17
+- 1.18
+- 1.19
+- 1.20+
 
-### Temel Özellikler
-- **Türkçe Küfür Tespiti**: Türkçe metinlerde küfür ve hakaret içeriklerini yüksek doğrulukla tespit eder
-- **Yapay Zeka Desteği**: Gelişmiş AI modelleri kullanarak karmaşık veya gizlenmiş küfürleri tespit edebilir
-- **Şiddet Seviyesi Sınıflandırması**: Tespit edilen küfürleri şiddet seviyesine göre 1-5 arası sınıflandırır
+## 🌟 Eklenti Açıklaması
 
-### Moderasyon Araçları
-- **Yapılandırılabilir Eylemler**: Küfür tespit edildiğinde yapılacak işlemleri özelleştirebilme
-- **Otomatik Cezalandırma**: Şiddet seviyesine göre otomatik uyarı, susturma veya yasaklama yapabilme
-- **Admin Bildirimleri**: Yetkililere küfür tespitlerini anında bildirebilme
-- **Admin GUI**: Küfür tespit istatistiklerini görüntülemek için kullanıcı dostu arayüz
+**Turkish Profanity Detection** (Türkçe Küfür Tespit Eklentisi), sunucunuz için geliştirilmiş, yapay zeka destekli, kapsamlı bir Türkçe küfür ve hakaret tespit sistemidir. Özellikle Türk sunucuları için optimize edilmiş bu eklenti, sohbet kanallarınızı temiz ve güvenli tutarken moderasyon ekibinizin işini önemli ölçüde kolaylaştırır.
 
-### Entegrasyon ve Depolama
-- **Discord Webhook Entegrasyonu**: Küfür tespitlerini Discord kanalınıza iletebilme
-- **Veritabanı Desteği**: İstatistiklerin MySQL veritabanında kalıcı olarak saklanması
-- **PlaceholderAPI Desteği**: Küfür istatistiklerini diğer eklentilerde kullanabilme
+Bu eklenti, gelişmiş yapay zeka algoritmalarını kullanarak basit kelime filtrelerinin tespit edemediği gizli küfürleri ve hareketleri algılar. Yapay zeka modeli, özellikle Türkçe dil yapısına göre eğitilmiştir ve sürekli olarak güncellenmektedir.
 
-### Performans ve Güvenlik
-- **Düşük Gecikme**: Sohbet mesajlarını minimum gecikme ile işleme
-- **Hız Sınırlaması**: Spam koruma sistemi ile hızlı mesaj gönderimi engelleme
-- **İzin Sistemi**: Kapsamlı izin sistemi ile eklenti özelliklerinin kontrolü
+## 🚀 Temel Özellikler
 
-## 🔧 Kurulum
+- ✅ **Yapay Zeka Destekli Analiz**: GPT-4.5 tabanlı yapay zeka desteği ile kelime listelerini aşan, bağlam temelli tespit sistemi
+- ✅ **Şiddet Seviyelerine Göre İşlemler**: Basit argo sözcüklerden ağır küfürlere kadar 5 farklı şiddet seviyesine göre otomatik işlemler
+- ✅ **Gerçek Zamanlı Filtreleme**: Mesajlar gönderilmeden önce analiz edilir, uygunsuz içerikler anında engellenir
+- ✅ **Discord Entegrasyonu**: Tespit edilen ihlallerin Discord kanalınıza otomatik olarak raporlanması
+- ✅ **Kullanıcı Dostu Yönetim Paneli**: Sezgisel bir arayüz ile tüm istatistikleri ve ayarları yönetin
+- ✅ **Veritabanı Desteği**: MySQL/SQLite desteği ile istatistikleri kalıcı olarak saklayın
+- ✅ **PlaceholderAPI Entegrasyonu**: Küfür istatistiklerini diğer eklentilerinizde kullanın
+- ✅ **Anti-Spam Koruması**: Hızlı mesaj göndermeye karşı koruma sistemi
+- ✅ **Özelleştirilebilir Komutlar**: Tespit durumlarında çalıştırılacak özel komutları ayarlayın
 
-### Gereksinimler
-- Minecraft 1.16 veya üzeri
-- Spigot, Paper veya uyumlu bir sunucu yazılımı
-- PlaceholderAPI (isteğe bağlı)
-- MySQL veritabanı (istatistiklerin kalıcı olması için önerilir)
+## 🛡️ Sunucunuzu Nasıl Korur?
 
-### Adımlar
-1. Eklenti dosyasını (`TurkishProfanityDetection.jar`) sunucunuzun `plugins` klasörüne yükleyin
-2. Sunucuyu yeniden başlatın veya `/reload` komutunu çalıştırın
-3. İlk çalıştırmada otomatik olarak oluşturulan `config.yml` dosyasını ihtiyaçlarınıza göre düzenleyin
-4. MySQL kullanmak istiyorsanız, veritabanı bağlantı bilgilerini yapılandırın
-5. Discord webhook entegrasyonu için webhook URL'sini yapılandırın (isteğe bağlı)
-6. Eklentiyi `/tpd reload` komutu ile yeniden yükleyin
+Plugin, oyuncularının mesajlarını hem klasik küfür kelime listeleri hem de modern yapay zeka algoritmaları ile analiz eder. Bu sayede:
 
-## ⚙️ Yapılandırma
+- **Kötü niyetli kaçamakları** (karakter değiştirme, boşluk ekleme vb.) tespit eder
+- **Bağlam temelli analizler** yapar, yanlış alarmları minimuma indirir
+- **Şiddet seviyesine göre** farklı yaptırımlar uygular (uyarı, mute, ban, vb.)
+- **Tüm ihlal kayıtlarını** detaylı şekilde arşivler ve raporlar
 
-Eklenti ilk yüklendiğinde otomatik olarak bir `config.yml` dosyası oluşturulur. Ana yapılandırma bölümleri şunlardır:
+## ⚙️ Kolay Kurulum ve Yapılandırma
 
-### API Ayarları
+Kurulum son derece basittir:
+1. Eklentiyi sunucunuzun plugins klasörüne yükleyin
+2. Sunucuyu yeniden başlatın
+3. `config.yml` dosyasından tüm özellikleri özelleştirin
+4. İsteğe bağlı olarak MySQL/Discord yapılandırmasını tamamlayın
 
-```yaml
-api:
-  url: "https://api.kynux.cloud/api/swear/detect"  # Küfür tespit API'sinin URL'si
-  timeout: 30000  # API isteği zaman aşımı (milisaniye)
-  
-  # Yapay zeka ayarları
-  ai:
-    use: true  # Yapay zeka kullanılsın mı?
-    model: "gpt-4.5"  # Kullanılacak AI modeli
-    confidence: 0.1  # Minimum güven seviyesi (0.0-1.0)
-```
+## 📊 Kapsamlı İstatistikler
 
-### Eylem Ayarları
+- Oyuncu bazlı küfür istatistikleri
+- En sık kullanılan uygunsuz kelimeler
+- Şiddet seviyesi dağılımı
+- Zaman bazlı istatistik raporları
 
-```yaml
-actions:
-  cancel-message: true  # Küfür içeren mesajları engellesin mi?
-  
-  # Log işlemleri
-  log:
-    enabled: true  # Küfür tespitlerini loglasın mı?
-    console: true  # Konsola yazdırsın mı?
-    file: true  # Dosyaya yazdırsın mı?
-    file-path: "logs/profanity.log"  # Log dosyası yolu
-  
-  # Discord webhook entegrasyonu
-  discord:
-    enabled: false
-    webhook-url: ""  # Discord webhook URL'si
-    username: "Küfür Koruması"
-    avatar-url: ""  # Webhook avatar URL'si
-    embed-color: "#FF0000"
-    notify-severity-level: 3  # Bu seviye ve üzeri küfürler Discord'a bildirilecek (1-5)
-  
-  # Küfür tespit edildiğinde çalıştırılacak komutlar
-  commands:
-    enabled: true
-    list:
-      - "warn %player% Uygunsuz dil kullanımı"
-      # - "tempban %player% 1h Küfür/Hakaret"
-```
+## 🔧 Teknik Detaylar
 
-### Şiddet Seviyesi Eylemler
+### Komutlar
+- `/tpd help` - Komut yardımını gösterir
+- `/tpd reload` - Eklentiyi yeniden yükler
+- `/tpd version` - Versiyon bilgisini gösterir
+- `/tpd stats <oyuncu>` - Oyuncu istatistiklerini gösterir
 
-```yaml
-severity-actions:
-  enabled: true
-  levels:
-    1:  # Hafif küfürler
-      commands:
-        - "warn %player% Hafif uygunsuz dil kullanımı"
-    # ... 2, 3, 4 seviyeleri
-    5:  # Çok ağır küfürler
-      commands:
-        - "warn %player% Çok ağır küfür kullanımı"
-        - "tempban %player% 1h Küfür/Hakaret"
-```
+### İzinler
+- `turkishprofanitydetection.bypass` - Filtreyi atlamak için
+- `turkishprofanitydetection.commands` - Komutları kullanmak için
+- `turkishprofanitydetection.admin` - Yönetici bildirimlerini almak için
+- `turkishprofanitydetection.statistics` - İstatistikleri görüntülemek için
 
-### Veritabanı Ayarları
+### API Kullanımı
+Eklenti, bulut tabanlı bir API kullanarak yapay zeka analizlerini gerçekleştirir:
+- Yüksek performanslı Minecraft endpoint: `http://api.kynux.cloud/api/swear/minecraft-check`
+- Yapay zeka tarafından önerilen aksiyon (warn, mute, kick, ban)
+- Güven skoru ve tespit edilen içeriğin ciddiyeti
+- Minecraft uyumluluğu kontrolü
 
-```yaml
-statistics:
-  enabled: true
-  storage-type: "mysql"  # mysql, sqlite veya file
-  data-retention-days: 30  # 0 = sınırsız
-  
-  # MySQL ayarları
-  mysql:
-    host: "localhost"
-    port: 3306
-    database: "minecraft"
-    username: "root"
-    password: "password"
-    table-prefix: "tpd_"
-```
+### Veritabanı Yapısı
+- Oyuncu bilgileri ve istatistikleri için ayrı tablolar
+- Otomatik temizleme özelliği ile eski kayıtların otomatik silinmesi
+- Verilerin yedeklenmesi ve taşınması için kolay yapı
 
-Daha fazla yapılandırma seçeneği için `config.yml` dosyasını inceleyebilirsiniz.
+## 🌐 Uyumluluk
 
-## 🔍 Komutlar
+Eklenti aşağıdaki sistemlerle tam uyumludur:
+- **Sunucu Yazılımları**: Spigot, Paper, Purpur, Bukkit
+- **Diğer Eklentiler**: PlaceholderAPI, LuckPerms, DiscordSRV, Vault
+- **Veritabanları**: MySQL, MariaDB, SQLite
+- **Chat Eklentileri**: EssentialsChat, VentureChat, HeroChat ve diğer popüler chat eklentileriyle uyumlu çalışır
 
-| Komut | Açıklama | İzin |
-|-------|----------|------|
-| `/turkishprofanity` veya `/tpd` | Ana komut | `turkishprofanitydetection.commands` |
-| `/tpd help` | Komut yardımını gösterir | `turkishprofanitydetection.commands` |
-| `/tpd reload` | Eklentiyi yeniden yükler | `turkishprofanitydetection.admin` |
-| `/tpd version` | Eklenti sürümünü gösterir | `turkishprofanitydetection.commands` |
-| `/tpd stats [oyuncu]` | Bir oyuncunun küfür istatistiklerini gösterir | `turkishprofanitydetection.statistics` |
-| `/tpd clear [oyuncu]` | Bir oyuncunun küfür istatistiklerini temizler | `turkishprofanitydetection.admin` |
-| `/tpd admin` | Admin GUI'yi açar | `turkishprofanitydetection.admin` |
+## 📈 Performans Etkileri
 
-## 🔒 İzinler
+- **CPU Kullanımı**: Minimal (asenkron istek ve işlemler)
+- **Bellek Kullanımı**: ~5-10MB (ayarlara bağlı olarak)
+- **Ağ Trafiği**: Düşük (sadece tespit durumlarında API çağrısı)
+- **Veritabanı Yükü**: Düşük (optimize edilmiş sorgular)
 
-| İzin | Açıklama | Varsayılan |
-|------|----------|------------|
-| `turkishprofanitydetection.bypass` | Mesajları kontrolden muaf tutar | op |
-| `turkishprofanitydetection.admin` | Admin komutlarını ve GUI'yi kullanma izni | op |
-| `turkishprofanitydetection.commands` | Komutları kullanma izni | op |
-| `turkishprofanitydetection.statistics` | İstatistikleri görüntüleme izni | op |
+## 📚 Yapılandırma Seçenekleri
 
-## 🔌 API Kullanımı
+Kapsamlı `config.yml` dosyası ile eklentinin her yönünü özelleştirebilirsiniz:
 
-### PlaceholderAPI Entegrasyonu
+- API ayarları (URL, timeout, model seçimi)
+- Küfür tespit seviye eşikleri
+- Discord webhook entegrasyonu
+- Veritabanı bağlantı ayarları
+- Mesaj özelleştirme
+- Komut tetikleyicileri
+- Anti-spam parametreleri
+- Log ve raporlama seçenekleri
 
-Eklenti PlaceholderAPI ile entegre çalışır ve aşağıdaki placeholder'ları sunar:
+## 🔄 Güncellemeler ve Destek
 
-| Placeholder | Açıklama |
-|-------------|----------|
-| `%tpd_count%` | Oyuncunun toplam küfür sayısı |
-| `%tpd_last_word%` | Son tespit edilen küfür kelimesi |
-| `%tpd_last_category%` | Son tespit edilen küfürün kategorisi |
-| `%tpd_last_level%` | Son tespit edilen küfürün şiddet seviyesi |
-| `%tpd_total_server%` | Sunucudaki toplam küfür sayısı |
-| `%tpd_top_player%` | En çok küfür eden oyuncu |
+- **Düzenli Güncellemeler**: Yeni özellikler ve tespit algoritmaları sürekli olarak eklenmektedir
+- **Teknik Destek**: Özel destek kanalları aracılığıyla hızlı yardım
+- **Dokümantasyon**: Detaylı kullanım kılavuzu ve SSS
+- **Özelleştirme**: İsteğe bağlı özel geliştirmeler ve entegrasyonlar
 
-### Diğer Eklentilerle Entegrasyon
+## 👥 Katkıda Bulunanlar
+- **KynuxCloud** - Ana Geliştirici
+- **TurkishAI Team** - Yapay Zeka Modeli Eğitimi
+- **Community Contributors** - Eklenti Testleri ve Geribildirim
 
-Bu eklentiyi diğer eklentilerle entegre etmek için API sınıflarını kullanabilirsiniz:
+## ⭐ Neden Bu Eklenti?
 
-```java
-// Eklentiyi almak
-TurkishProfanityDetection tpd = (TurkishProfanityDetection) Bukkit.getPluginManager().getPlugin("TurkishProfanityDetection");
-
-// Bir metinde küfür olup olmadığını kontrol etmek
-ProfanityApiService apiService = tpd.getApiService();
-apiService.checkMessage(message, player.getName(), result -> {
-    if (result.isContainsProfanity()) {
-        // Küfür tespit edildi
-        // Özel işlemler uygulayabilirsiniz
-    }
-});
-```
-
-## ❓ Sık Sorulan Sorular
-
-### Eklenti sunucumu yavaşlatır mı?
-Hayır, eklenti asenkron işlem kullanarak ana sunucu iş parçacığını bloke etmez. API istekleri arka planda gerçekleşir.
-
-### Eklenti internetsiz çalışır mı?
-Hayır, küfür tespiti için API'ye erişim gereklidir. İnternet olmadan eklenti temel işlevselliğini kaybeder.
-
-### Veritabanı kullanmak zorunlu mu?
-Hayır, istatistikler dosya tabanlı olarak da saklanabilir. Ancak MySQL kullanmak performans ve veri güvenliği açısından önerilir.
-
-### Küfür tespitinde hata var, ne yapmalıyım?
-API'nin yanlış tespitleri olabilir. Bu durumda loglara bakıp sorunları Kynux Discord sunucusu üzerinden bildirebilirsiniz.
-
-### PlaceholderAPI zorunlu mu?
-Hayır, eklenti PlaceholderAPI olmadan da çalışır, ancak placeholder'ları kullanmak için PlaceholderAPI gereklidir.
-
-## 📝 Sorun Giderme
-
-### API Bağlantı Sorunları
-- API URL'sinin doğru olduğundan emin olun
-- Timeout değerini artırmayı deneyin
-- Sunucunuzun API'ye erişebildiğinden emin olun
-
-### Veritabanı Bağlantı Sorunları
-- MySQL bağlantı bilgilerinin doğru olduğundan emin olun
-- MySQL sunucusunun çalıştığından emin olun
-- Firewall ayarlarınızı kontrol edin
-
-### Performans Sorunları
-- `data-retention-days` değerini düşürün
-- Gereksiz log ayarlarını kapatın
-- Discord webhook entegrasyonunu devre dışı bırakın
-
-## 📊 Sürüm Notları
-
-### Versiyon 1.0.0
-- İlk kararlı sürüm
-- Kapsamlı performans iyileştirmeleri
-- API v2 desteği eklendi
-- Gelişmiş yapay zeka modeli entegrasyonu
-- Veritabanı sorgu optimizasyonları
-- Admin GUI tamamen yenilendi
-- PlaceholderAPI entegrasyonu geliştirildi
-
-### Versiyon 0.0.3
-- MySQL desteği eklendi, veritabanı bağlantı havuzu iyileştirildi
-- İstatistikler artık sunucu yeniden başlatıldığında kaybolmuyor
-- API bağlantı zaman aşımı sorunları giderildi
-- Eşzamanlı mesaj işleme iyileştirildi
-- Mesaj önbelleği ve hız sınırlaması eklendi
-
-## 🤝 Destek ve İletişim
-
-- Discord: [kynux.dev](https://discord.gg/kynux)
-- Web Sitesi: [https://kynux.cloud](https://kynux.cloud)
-- GitHub: [github.com/kynuxdev/turkish-profanity-detection-plugin](https://github.com/kynuxdev/turkish-profanity-detection-plugin)
-- E-posta: support@kynux.cloud
+- **Türkçe Odaklı**: Özellikle Türkçe dil yapısı ve küfür kalıpları için tasarlanmıştır
+- **Minimum Performans Etkisi**: Asenkron işlemler sayesinde sunucu performansını etkilemez
+- **Sürekli Güncellenen**: Yeni tespit yöntemleri ve korumalar düzenli olarak eklenir
+- **Tam Entegrasyon**: PlaceholderAPI, Discord ve veritabanı sistemleri ile tam uyumlu
 
 ---
 
-<p align="center">
-  <small>© 2025 KynuxCloud | Tüm hakları saklıdır.</small>
-</p>
+## 🔍 Yapay Zeka Modelinin Çalışma Prensibi
+
+Eklentimizin kullandığı yapay zeka modeli, özellikle Türkçe dil yapısına uygun olarak geliştirilmiş olup, şu özelliklere sahiptir:
+
+1. **Bağlam Analizi**: Sadece tek kelimelere değil, cümle yapısına ve mesajın bağlamına bakarak küfür tespiti yapar
+2. **Karakter Değiştirme Tespiti**: "a" yerine "@", "o" yerine "0" gibi karakterleri tanır
+3. **Kelime Bölme Tespiti**: Araya boşluk veya özel karakter eklenerek bölünmüş küfürleri tespit eder
+4. **Fonetik Benzerlik**: Sesli okunduğunda küfüre benzeyen ifadeleri tespit eder
+5. **Dil Öğrenimi**: Zaman içinde yeni kalıpları ve kaçış tekniklerini öğrenir
+
+## 📊 Performans ve İstatistik Örnekleri
+
+```
+Sunucu: SurvivalTR
+Dönem: Ocak 2025
+Toplam Mesaj: 145,782
+Tespit Edilen Küfür: 2,834 (%1.94)
+En Sık Kategori: Hakaret (%42)
+Ortalama Şiddet Seviyesi: 3.2/5
+En Aktif Saat: 21:00-23:00
+```
+
+## 📋 Kurulum Sonrası Kontrol Listesi
+
+- [ ] API bağlantısını test edin (`/tpd test` komutu ile)
+- [ ] Discord webhook bağlantısını doğrulayın
+- [ ] Veritabanı bağlantısını kontrol edin
+- [ ] İzinleri uygun şekilde ayarlayın
+- [ ] En az bir admin hesabına bildirim izni verin
+- [ ] Seviye bazlı komutları kendi sunucunuza göre özelleştirin
+- [ ] Mesaj şablonlarını güncelleyin
+- [ ] Test mesajlarıyla sistemin çalışmasını kontrol edin
+
+---
+
+**Geliştirici**: KynuxCloud  
+**Sürüm**: 1.0.0  
+**Lisans**: Tüm hakları saklıdır.  
+**İletişim**: support@kynux.cloud

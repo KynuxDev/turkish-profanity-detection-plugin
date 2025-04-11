@@ -45,8 +45,8 @@ public class ProfanityApiService {
     public ProfanityApiService(@NotNull FileConfiguration config, @NotNull Logger logger) {
         this.logger = logger;
         
-        // API ayarlarını yapılandırma dosyasından al
-        this.apiUrl = config.getString("api.url", "http://api.kynux.cloud/api/swear/detect");
+        // API ayarlarını yapılandırma dosyasından al - yeni minecraft-check endpoint'i ile
+        this.apiUrl = config.getString("api.url", "http://api.kynux.cloud/api/swear/minecraft-check");
         this.timeout = config.getInt("api.timeout", 30000); // Varsayılan 30 saniye
         this.useAI = config.getBoolean("api.ai.use", true);
         this.model = config.getString("api.ai.model", "gpt-4.5");
@@ -55,11 +55,26 @@ public class ProfanityApiService {
         // IP güvenlik ayarları
         this.ipWhitelistEnabled = config.getBoolean("security.ip-whitelist.enabled", false);
         this.ipWhitelist = config.getStringList("security.ip-whitelist.ips");
+        
+        // OkHttpClient yapılandırması ile daha sağlam bir HTTP istemcisi oluştur
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(timeout, TimeUnit.MILLISECONDS)
                 .readTimeout(timeout, TimeUnit.MILLISECONDS)
                 .writeTimeout(timeout, TimeUnit.MILLISECONDS)
-                .retryOnConnectionFailure(false) // Yeniden denemeler kapalı
+                .retryOnConnectionFailure(true) // Bağlantı hatalarında otomatik yeniden deneme
+                .connectionPool(new okhttp3.ConnectionPool(5, 60, TimeUnit.SECONDS)) // Bağlantı havuzu optimizasyonu
+                .protocols(java.util.Arrays.asList(okhttp3.Protocol.HTTP_1_1, okhttp3.Protocol.HTTP_2)) // HTTP protokolleri
+                .dns(new okhttp3.Dns() {
+                    @Override
+                    public List<InetAddress> lookup(String hostname) throws UnknownHostException {
+                        try {
+                            return java.util.Arrays.asList(InetAddress.getAllByName(hostname));
+                        } catch (UnknownHostException e) {
+                            logger.warning("DNS çözümleme hatası: " + hostname + " - " + e.getMessage());
+                            throw e;
+                        }
+                    }
+                })
                 .build();
                 
         // JSON çözücü/kodlayıcı
@@ -80,6 +95,9 @@ public class ProfanityApiService {
         return CompletableFuture.supplyAsync(new Supplier<ProfanityResponse>() {
             @Override
             public ProfanityResponse get() {
+                // URL builder değişkenini daha geniş kapsamda tanımla
+                HttpUrl.Builder urlBuilder = null;
+                
                 try {
                     // IP güvenlik kontrolü
                     if (ipWhitelistEnabled && !isApiHostAllowed()) {
@@ -88,7 +106,6 @@ public class ProfanityApiService {
                     }
 
                     // API URL ve parametreleri oluştur
-                    HttpUrl.Builder urlBuilder;
                     try {
                         urlBuilder = HttpUrl.parse(apiUrl).newBuilder();
                     } catch (NullPointerException e) {
@@ -96,11 +113,8 @@ public class ProfanityApiService {
                         return ProfanityResponse.createApiError("Geçersiz API URL: " + apiUrl);
                     }
                     
-                    // URL parametrelerini ekle
-                    urlBuilder.addQueryParameter("text", text)
-                            .addQueryParameter("useAI", String.valueOf(useAI))
-                            .addQueryParameter("model", model)
-                            .addQueryParameter("confidence", String.valueOf(confidence));
+                    // URL parametrelerini ekle - yeni endpoint sadece text parametresi kullanıyor
+                    urlBuilder.addQueryParameter("text", text);
                     
                     // İsteği oluştur
                     Request request = new Request.Builder()
@@ -122,18 +136,116 @@ public class ProfanityApiService {
                         return profanityResponse;
                     }
                 } catch (SocketTimeoutException e) {
-                    // Zaman aşımı hatası - basitçe log tutup devam et
+                    // Zaman aşımı hatası - yeniden deneme ile devam et
                     logger.log(Level.WARNING, "API isteği sırasında zaman aşımı: " + e.getMessage());
-                    return ProfanityResponse.createTimeoutError(e.getMessage());
+                    return retryRequest(urlBuilder, text, "Zaman aşımı");
                 } catch (IOException e) {
-                    logger.log(Level.SEVERE, "API bağlantı hatası: " + e.getMessage(), e);
-                    return ProfanityResponse.createConnectionError(e.getMessage());
+                    // Bağlantı hatalarını işle ve yeniden dene
+                    String errorMessage = e.getMessage();
+                    String errorType = "Genel IO Hatası";
+                    
+                    if (errorMessage != null) {
+                        if (errorMessage.contains("unexpected end of stream") || 
+                            errorMessage.contains("Connection reset") || 
+                            errorMessage.contains("aborted by the software") ||
+                            errorMessage.contains("EOF") ||
+                            errorMessage.contains("not found: limit=0 content")) {
+                            errorType = "Bağlantı Kesilmesi";
+                        } else if (errorMessage.contains("Failed to connect") || 
+                                   errorMessage.contains("Unable to resolve host")) {
+                            errorType = "Sunucuya Ulaşılamıyor";
+                        }
+                    }
+                    
+                    logger.log(Level.WARNING, "API bağlantı hatası (" + errorType + "): " + errorMessage);
+                    
+                    // Retry mekanizması
+                    if (urlBuilder != null) {
+                        return retryRequest(urlBuilder, text, errorType);
+                    } else {
+                        logger.log(Level.SEVERE, "URL oluşturulamadığı için yeniden deneme yapılamıyor", e);
+                        return ProfanityResponse.createConnectionError(errorMessage);
+                    }
                 } catch (IllegalArgumentException e) {
                     logger.log(Level.SEVERE, "API istek hatası: " + e.getMessage(), e);
                     return ProfanityResponse.createApiError(e.getMessage());
                 }
             }
         });
+    }
+    
+    /**
+     * API isteğini yeniden deneme mantığı.
+     * 
+     * @param urlBuilder Orijinal URL builder
+     * @param text İstek metni
+     * @param errorType İlk hatanın türü
+     * @return API yanıtı
+     */
+    private ProfanityResponse retryRequest(HttpUrl.Builder urlBuilder, String text, String errorType) {
+        // Yeniden deneme sayısı ve gecikmesi
+        final int MAX_RETRIES = 3;
+        int currentRetry = 0;
+        long retryDelay = 1000; // Başlangıç 1 saniye
+        
+        while (currentRetry < MAX_RETRIES) {
+            currentRetry++;
+            
+            try {
+                // Kademeli olarak artan gecikme (exponential backoff)
+                Thread.sleep(retryDelay);
+                retryDelay *= 2; // Her denemede süreyi iki katına çıkar
+                
+                logger.info("API isteği yeniden deneniyor (" + currentRetry + "/" + MAX_RETRIES + 
+                           ") - Hata: " + errorType);
+                
+                // Sadece text parametresini ekle - yeni endpoint'de sadece bu gerekiyor
+                urlBuilder.addQueryParameter("text", text);
+                
+                // Yeni bir istek oluştur
+                Request retryRequest = new Request.Builder()
+                        .url(urlBuilder.build())
+                        .get()
+                        .header("Connection", "close") // Keep-alive sorunlarını önlemek için bağlantıyı kapat
+                        .header("User-Agent", "TurkishProfanityDetection/1.0")
+                        .header("Accept", "application/json")
+                        .build();
+                
+                // Yeni bir HTTP istemcisi oluştur (bağlantı havuzu sorunlarını önlemek için)
+                OkHttpClient retryClient = client.newBuilder()
+                        .connectTimeout(timeout + (retryDelay / 2), TimeUnit.MILLISECONDS) // Her denemede biraz daha uzun timeout
+                        .readTimeout(timeout + (retryDelay / 2), TimeUnit.MILLISECONDS)
+                        .build();
+                
+                // İsteği gönder
+                try (Response retryResponse = retryClient.newCall(retryRequest).execute()) {
+                    if (!retryResponse.isSuccessful()) {
+                        int statusCode = retryResponse.code();
+                        logger.warning("Yeniden deneme başarısız! Durum kodu: " + statusCode);
+                        // Devam et ve bir sonraki denemeye geç
+                        continue;
+                    }
+
+                    // Yanıtı JSON olarak çözümle
+                    String responseBody = retryResponse.body().string();
+                    ProfanityResponse profanityResponse = gson.fromJson(responseBody, ProfanityResponse.class);
+                    logger.info("API isteği başarıyla yeniden denendi");
+                    return profanityResponse;
+                }
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                logger.log(Level.SEVERE, "Yeniden deneme işlemi kesintiye uğradı", ie);
+                return ProfanityResponse.createConnectionError("Yeniden deneme sırasında kesinti: " + ie.getMessage());
+            } catch (IOException retryEx) {
+                logger.log(Level.WARNING, "Yeniden deneme sırasında bağlantı hatası (" + currentRetry + "/" + MAX_RETRIES + 
+                          "): " + retryEx.getMessage());
+                // Devam et ve bir sonraki denemeye geç
+            }
+        }
+        
+        // Tüm denemeler başarısız olduğunda
+        logger.log(Level.SEVERE, "API bağlantısı " + MAX_RETRIES + " deneme sonrasında kurulamadı");
+        return ProfanityResponse.createConnectionError("API'ye " + MAX_RETRIES + " deneme sonrasında bağlanılamadı");
     }
 
     /**

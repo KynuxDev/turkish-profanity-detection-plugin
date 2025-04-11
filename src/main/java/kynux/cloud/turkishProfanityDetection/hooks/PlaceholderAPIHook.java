@@ -38,12 +38,37 @@ public class PlaceholderAPIHook {
      * Placeholderleri kaydeder.
      */
     private void registerPlaceholders() {
-        // PlaceholderAPI sınıfı reflection ile yüklenir çünkü plugin olmayabilir
         try {
+            // PlaceholderExpansion sınıfını reflection ile yükle
             Class.forName("me.clip.placeholderapi.expansion.PlaceholderExpansion");
-            new ProfanityExpansion().register();
+            
+            // PAPI registerExpansion metodunu reflection ile çağır
+            Class<?> placeholderAPI = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
+            
+            // Expansion nesnesini oluştur
+            ProfanityExpansion expansion = new ProfanityExpansion();
+            
+            // Expansion'ı kaydet
+            boolean registered = false;
+            try {
+                // Önce PlaceholderAPI class'ındaki registerExpansion metodunu bulmayı dene
+                registered = (boolean) placeholderAPI.getMethod("registerExpansion", Class.forName("me.clip.placeholderapi.expansion.PlaceholderExpansion"))
+                    .invoke(null, expansion);
+            } catch (Exception e) {
+                // Eğer yukarıdaki metod bulunamazsa, expansion'daki register metodunu dene
+                registered = (boolean) expansion.getClass().getMethod("register").invoke(expansion);
+            }
+            
+            if (registered) {
+                plugin.getLogger().info("PlaceholderAPI expansion başarıyla kaydedildi!");
+            } else {
+                plugin.getLogger().warning("PlaceholderAPI expansion kaydedilemedi!");
+            }
         } catch (ClassNotFoundException e) {
-            plugin.getLogger().warning("PlaceholderAPI bulunamadı veya eski bir sürüm kullanılıyor.");
+            plugin.getLogger().warning("PlaceholderAPI bulunamadı! Placeholder desteği devre dışı.");
+        } catch (Exception e) {
+            plugin.getLogger().warning("PlaceholderAPI expansion kaydedilirken hata: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -94,9 +119,11 @@ public class PlaceholderAPIHook {
     
     /**
      * PlaceholderAPI Expansion sınıfı.
-     * Bu sınıf, PlaceholderAPI olmadığında da compile edilebilmesi için içeride tanımlanmıştır.
+     * Bu sınıf, PlaceholderAPI eklentiden bağımsız olarak derlenebilmesi için
+     * özel olarak tanımlanmıştır. PlaceholderExpansion'ı direkt extend etmek yerine
+     * reflection ile metotları çağırıyoruz.
      */
-    private class ProfanityExpansion /* extends PlaceholderExpansion */ {
+    public class ProfanityExpansion /* extends PlaceholderExpansion */ {
         
         /**
          * Expansion kimliğini döndürür.
@@ -109,7 +136,9 @@ public class PlaceholderAPIHook {
          * Expansion yazarını döndürür.
          */
         public String getAuthor() {
-            return plugin.getDescription().getAuthors().get(0);
+            return plugin.getDescription().getAuthors().isEmpty() 
+                ? "KynuxCloud" 
+                : plugin.getDescription().getAuthors().get(0);
         }
         
         /**
@@ -127,17 +156,19 @@ public class PlaceholderAPIHook {
         }
         
         /**
-         * Expansionu kaydeder.
+         * Expansion'ı kaydeder.
          */
         public boolean register() {
-            // PlaceholderAPI yüklü değilse reflection hatası olmaz
             try {
-                Class<?> expansionClass = Class.forName("me.clip.placeholderapi.expansion.PlaceholderExpansion");
-                Object expansion = getClass().newInstance();
+                // PlaceholderAPI ile ilgili sınıfları reflection ile yükle
+                Class<?> placeholderAPIClass = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
                 
-                // register() metodunu çağır
-                expansionClass.getMethod("register").invoke(expansion);
-                return true;
+                // register metodunu çağır
+                Object result = placeholderAPIClass.getMethod("registerExpansion", 
+                               Class.forName("me.clip.placeholderapi.expansion.PlaceholderExpansion"))
+                                   .invoke(null, this);
+                
+                return result instanceof Boolean ? (Boolean) result : false;
             } catch (Exception e) {
                 plugin.getLogger().warning("PlaceholderAPI expansion kaydedilemedi: " + e.getMessage());
                 return false;
@@ -168,7 +199,7 @@ public class PlaceholderAPIHook {
             
             // %tpd_status% - API durumu
             if (identifier.equals("status")) {
-                return "Aktif"; // Gelecekte API'nin gerçekten çalışıp çalışmadığını kontrol edebiliriz
+                return "Aktif";
             }
             
             return null;

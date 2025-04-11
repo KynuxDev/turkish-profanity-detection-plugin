@@ -2,19 +2,34 @@
 
 # API ayarları
 api:
-  url: "http://api.kynux.cloud/api/swear/detect"
+  url: "http://api.kynux.cloud/api/swear/minecraft-check"
   timeout: 30000 # milisaniye cinsinden (30 saniye)
   
-  # Yapay zeka ayarları
+  # Eski yapay zeka ayarları (geriye uyumluluk için tutuldu, yeni API endpoint ile kullanılmaz)
   ai:
     use: true
-    model: "gpt-4.5"
+    model: "claude-3.7-sonnet"
     confidence: 0.1
+    
+  # Ek API parametreleri (isteğe bağlı)
+  additional-params:
+    enabled: false
+    list: "param1=value1,param2=value2"
 
 # Küfür tespit edildiğinde uygulanacak işlemler
 actions:
   # Mesajı engellesin mi?
   cancel-message: true
+  
+  # API tarafından önerilen aksiyonlar (yeni minecraft-check API'si için)
+  # Bu komutlar, AI tarafından önerilen aksiyon türlerine göre çalıştırılır
+action-recommendations:
+  warn: "warn %player% Uygunsuz içerik tespit edildi. Lütfen dikkat ediniz."
+  mute: "mute %player% %time% Uygunsuz içerik"
+  mute-time: "5m"
+  kick: "kick %player% Uygunsuz içerik nedeniyle sunucudan atıldınız."
+  ban: "tempban %player% %time% Uygunsuz içerik nedeniyle geçici olarak yasaklandınız."
+  ban-time: "1d"
   
   # Log işlemleri
   log:
@@ -71,7 +86,7 @@ statistics:
   # Veri saklama süresi (gün olarak, 0 = sınırsız)
   data-retention-days: 30
   # Küfür istatistiklerini kaydetme türü (mysql, sqlite, file)
-  storage-type: "mysql"
+  storage-type: "sqlite"
   # MySQL bağlantı bilgileri (storage-type: mysql ise kullanılır)
   mysql:
     host: "localhost"

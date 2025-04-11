@@ -117,112 +117,212 @@ public class ChatListener implements Listener {
             return;
         }
         
-        // Mesajı asenkron olarak API ile kontrol et - mesajı engelleme
-        plugin.getProfanityApiService().checkText(message).thenAccept(response -> {
+        // Önbellek kontrolü - aynı mesaj daha önce kontrol edilmiş mi?
+        Boolean cachedResult = plugin.getFromCache(message);
+        if (cachedResult != null) {
+            // Önbellekte bulunan sonuca göre işlem yap
+            if (cachedResult) {
+                // Küfür tespit edilmişti, işlemleri yap
+                // Önbellekten alınan sonuçlar için tüm parametreleri varsayılan değerlerle gönder
+                handleProfanityDetected(player, message, null, true, 0.0, "", "", false);
+            }
+            return; // Önbellekte bulunan sonucu kullandık, API çağrısı yapmaya gerek yok
+        }
+        
+        // Thread havuzunda asenkron olarak çalıştır (içiçe asenkron işlem yerine)
+        plugin.getThreadPool().submit(() -> {
             try {
-                // API yanıtı geçerli değilse veya küfür tespit edilmemişse işlem yapma
-                if (!response.isSuccess() || response.getResult() == null || !response.getResult().isSwear()) {
+                // Mesajı API ile kontrol et
+                ProfanityResponse response = plugin.getProfanityApiService().checkText(message).get();
+                
+                // API yanıtı geçerli değilse işlem yapma
+                if (!response.isSuccess() || response.getResult() == null) {
+                    // Temiz mesajı önbelleğe ekle
+                    plugin.addToCache(message, false);
                     return;
                 }
+                
+                // Yeni API yapısı isSwear alanına göre işlem yapma
+                if (!response.getResult().isSwear()) {
+                    // Temiz mesajı önbelleğe ekle
+                    plugin.addToCache(message, false);
+                    return;
+                }
+                
+                // Küfürlü mesajı önbelleğe ekle
+                plugin.addToCache(message, true);
                 
                 // Küfür tespit edildi, ayarlanmış işlemleri yap
                 ProfanityResponse.Details details = response.getResult().getDetails();
                 
-                // Mesajı iptal et - sonradan engelleyeceğiz
-                if (cancelMessage) {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        try {
-                            // Oyuncuya bildirim gönder
-                            MessageUtils.sendMessage(player, plugin.getConfig().getString("messages.prefix") + 
-                                    plugin.getConfig().getString("messages.blocked", "Mesajınız uygunsuz içerik nedeniyle engellendi."));
-                            
-                            // Uygunsuz mesajı sil (tüm mesajları göndeririz ve bu mesaj hariç)
-                            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                                onlinePlayer.hidePlayer(plugin, player);
-                                onlinePlayer.showPlayer(plugin, player);
-                            }
-                        } catch (Exception e) {
-                            plugin.getLogger().log(Level.WARNING, "Mesaj iptal edilirken hata: " + e.getMessage(), e);
+                // Ana işleme fonksiyonunu çağır - yeni parametreler ile
+                handleProfanityDetected(
+                    player, 
+                    message, 
+                    details, 
+                    response.getResult().isAiDetected(), 
+                    response.getResult().getConfidence(),
+                    response.getResult().getModel(),
+                    response.getResult().getActionRecommendation(),
+                    response.getResult().isSafeForMinecraft()
+                );
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Küfür kontrolü sırasında hata: " + e.getMessage(), e);
+            }
+        });
+    }
+    
+    /**
+     * Küfür tespit edildiğinde yapılacak işlemleri gerçekleştirir.
+     * 
+     * @param player Mesajı gönderen oyuncu
+     * @param message Gönderilen mesaj
+     * @param details Küfür tespiti detayları (önbellekten geliyorsa null olabilir)
+     * @param isAiDetected AI tarafından tespit edildi mi
+     * @param confidence Tespit güvenilirliği (0.0-1.0 arası)
+     * @param model Kullanılan AI modeli
+     * @param actionRecommendation Önerilen aksiyon (warn, mute, kick, ban)
+     * @param isSafeForMinecraft Minecraft için güvenli içerik mi
+     */
+    private void handleProfanityDetected(
+            Player player, 
+            String message, 
+            ProfanityResponse.Details details, 
+            boolean isAiDetected,
+            double confidence,
+            String model,
+            String actionRecommendation,
+            boolean isSafeForMinecraft) {
+        try {
+            // Mesajı iptal et - sonradan engelleyeceğiz
+            if (cancelMessage) {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    try {
+                        // Oyuncuya bildirim gönder
+                        MessageUtils.sendMessage(player, plugin.getConfig().getString("messages.prefix") + 
+                                plugin.getConfig().getString("messages.blocked", "Mesajınız uygunsuz içerik nedeniyle engellendi."));
+                        
+                        // Uygunsuz mesajı sil (tüm mesajları göndeririz ve bu mesaj hariç)
+                        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                            onlinePlayer.hidePlayer(plugin, player);
+                            onlinePlayer.showPlayer(plugin, player);
                         }
-                    });
-                }
+                    } catch (Exception e) {
+                        plugin.getLogger().log(Level.WARNING, "Mesaj iptal edilirken hata: " + e.getMessage(), e);
+                    }
+                });
+            }
+            
+            // Eğer details null ise (önbellekten gelen bir sonuç), detaylı işlemleri yapamayız
+            if (details == null) {
+                return;
+            }
                 
-                // İstatistiği kaydet
-                if (statisticsEnabled && details != null) {
-                    ProfanityRecord record = new ProfanityRecord(
-                            player.getUniqueId(),
-                            player.getName(),
-                            details.getWord(),
-                            details.getCategory(),
-                            details.getSeverityLevel(),
-                            details.getDetectedWords(),
-                            message,
-                            response.getResult().isAiDetected()
-                    );
-                    
-                    plugin.getProfanityStorage().addRecord(record);
-                    
-                    // Discord webhook'a gönder
-                    plugin.getDiscordWebhook().sendProfanityAlert(record);
-                    
-                    // PlaceholderAPI hook'unu güncelle
-                    plugin.getPlaceholderAPIHook().updatePlayerProfanityCount(player.getUniqueId());
-                }
-                
-                // Log işlemleri
-                if (logEnabled) {
-                    String logMessage = player.getName() + " tarafından gönderilen mesajda uygunsuz içerik tespit edildi: " + message;
-                    
-                    if (logConsole) {
-                        plugin.getLogger().info(logMessage);
+            // İstatistiği kaydet - ayrı bir thread'e gönder
+            if (statisticsEnabled) {
+                plugin.getThreadPool().submit(() -> {
+                    try {
+                        ProfanityRecord record = new ProfanityRecord(
+                                player.getUniqueId(),
+                                player.getName(),
+                                details.getWord(),
+                                details.getCategory(),
+                                details.getSeverityLevel(),
+                                details.getDetectedWords(),
+                                message,
+                                isAiDetected,
+                                confidence,
+                                model,
+                                actionRecommendation,
+                                isSafeForMinecraft
+                        );
+                        
+                        plugin.getProfanityStorage().addRecord(record);
+                        
+                        // Discord webhook'a gönder - ayrı thread'de
+                        if (plugin.getConfig().getBoolean("actions.discord.enabled", false)) {
+                            plugin.getThreadPool().submit(() -> plugin.getDiscordWebhook().sendProfanityAlert(record));
+                        }
+                        
+                        // PlaceholderAPI hook'unu güncelle
+                        if (plugin.getPlaceholderAPIHook() != null) {
+                            plugin.getPlaceholderAPIHook().updatePlayerProfanityCount(player.getUniqueId());
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().log(Level.WARNING, "İstatistik kaydedilirken hata: " + e.getMessage(), e);
+                    }
+                });
+            }
+            
+            // Log işlemleri - ayrı bir thread'e gönder
+            if (logEnabled) {
+                plugin.getThreadPool().submit(() -> {
+                    try {
+                        String logMessage = player.getName() + " tarafından gönderilen mesajda uygunsuz içerik tespit edildi: " + message;
+                        
+                        if (logConsole) {
+                            plugin.getLogger().info(logMessage);
+                        }
+                        
+                        if (logFile) {
+                            logToFile(player.getName(), message, details.getWord(), details.getCategory(), 
+                                    details.getSeverityLevel(), isAiDetected);
+                        }
+                        
+                        // Yöneticilere bildirim gönder
+                        final String adminMessage = plugin.getConfig().getString("messages.prefix") + 
+                                plugin.getConfig().getString("messages.admin-alert", "&c%player% &fmuhtemel küfür kullandı: &7%message%")
+                                        .replace("%player%", player.getName())
+                                        .replace("%message%", message);
+                        
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            for (Player admin : Bukkit.getOnlinePlayers()) {
+                                if (admin.hasPermission("turkishprofanitydetection.admin")) {
+                                    MessageUtils.sendMessage(admin, adminMessage);
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        plugin.getLogger().log(Level.WARNING, "Log işlemleri sırasında hata: " + e.getMessage(), e);
+                    }
+                });
+            }
+            
+            // Komut işlemleri ana thread'de çalışmalı
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                try {
+                    // Küfür seviyesine göre komutu çalıştır
+                    if (actionRecommendation != null && !actionRecommendation.isEmpty()) {
+                        // Yeni API tarafından önerilen aksiyona göre komut çalıştır
+                        executeActionRecommendation(player, message, actionRecommendation);
+                    } else if (severityActionsEnabled) {
+                        // Eski sistem - şiddet seviyesine göre komut çalıştır
+                        int severity = details.getSeverityLevel();
+                        List<String> levelCommands = severityCommands.get(severity);
+                        
+                        if (levelCommands != null && !levelCommands.isEmpty()) {
+                            for (String cmd : levelCommands) {
+                                String finalCmd = cmd.replace("%player%", player.getName()).replace("%message%", message);
+                                executeCommand(finalCmd);
+                            }
+                            return; // Seviye komutları çalıştırıldıysa genel komutları çalıştırma
+                        }
                     }
                     
-                    if (logFile && details != null) {
-                        logToFile(player.getName(), message, details.getWord(), details.getCategory(), 
-                                details.getSeverityLevel(), response.getResult().isAiDetected());
-                    }
-                    
-                    // Yöneticilere bildirim gönder
-                    String adminMessage = plugin.getConfig().getString("messages.prefix") + 
-                            plugin.getConfig().getString("messages.admin-alert", "&c%player% &fmuhtemel küfür kullandı: &7%message%")
-                                    .replace("%player%", player.getName())
-                                    .replace("%message%", message);
-                    
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        for (Player admin : Bukkit.getOnlinePlayers()) {
-                            if (admin.hasPermission("turkishprofanitydetection.admin")) {
-                                MessageUtils.sendMessage(admin, adminMessage);
-                            }
-                        }
-                    });
-                }
-                
-                // Küfür seviyesine göre komutu çalıştır
-                if (severityActionsEnabled && details != null) {
-                    int severity = details.getSeverityLevel();
-                    List<String> levelCommands = severityCommands.get(severity);
-                    
-                    if (levelCommands != null && !levelCommands.isEmpty()) {
-                        for (String cmd : levelCommands) {
+                    // Genel komutları çalıştır
+                    if (commandsEnabled && !commands.isEmpty()) {
+                        for (String cmd : commands) {
                             String finalCmd = cmd.replace("%player%", player.getName()).replace("%message%", message);
                             executeCommand(finalCmd);
                         }
-                        return; // Seviye komutları çalıştırıldıysa genel komutları çalıştırma
                     }
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.WARNING, "Komut çalıştırılırken hata: " + e.getMessage(), e);
                 }
-                
-                // Genel komutları çalıştır
-                if (commandsEnabled && !commands.isEmpty()) {
-                    for (String cmd : commands) {
-                        String finalCmd = cmd.replace("%player%", player.getName()).replace("%message%", message);
-                        executeCommand(finalCmd);
-                    }
-                }
-                
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "Küfür tespiti sırasında hata: " + e.getMessage(), e);
-            }
-        });
+            });
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Küfür tespiti sırasında hata: " + e.getMessage(), e);
+        }
     }
     
     /**
@@ -262,6 +362,60 @@ public class ChatListener implements Listener {
                     timestamp, playerName, word, category, severity, aiDetected, message));
         } catch (IOException e) {
             plugin.getLogger().log(Level.WARNING, "Küfür log dosyasına yazılırken hata: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * API'nin önerdiği aksiyonu uygular. Bu yapay zeka tarafından belirlenen
+     * en uygun aksiyon türünü Minecraft komutlarına dönüştürür.
+     *
+     * @param player Oyuncu
+     * @param message Mesaj
+     * @param actionType Aksiyon türü (warn, mute, kick, ban)
+     */
+    private void executeActionRecommendation(Player player, String message, String actionType) {
+        String playerName = player.getName();
+        
+        switch (actionType.toLowerCase()) {
+            case "warn":
+                // Oyuncuya özel bir uyarı mesajı gönder
+                String warnMessage = plugin.getConfig().getString("action-recommendations.warn", 
+                        "warn %player% Uygunsuz içerik tespit edildi. Lütfen dikkat ediniz.");
+                executeCommand(warnMessage.replace("%player%", playerName));
+                break;
+                
+            case "mute":
+                // Oyuncuyu geçici olarak sustur (varsayılan 5 dakika)
+                String muteTime = plugin.getConfig().getString("action-recommendations.mute-time", "5m");
+                String muteMessage = plugin.getConfig().getString("action-recommendations.mute", 
+                        "mute %player% %time% Uygunsuz içerik");
+                executeCommand(muteMessage.replace("%player%", playerName).replace("%time%", muteTime));
+                break;
+                
+            case "kick":
+                // Oyuncuyu sunucudan at
+                String kickMessage = plugin.getConfig().getString("action-recommendations.kick", 
+                        "kick %player% Uygunsuz içerik nedeniyle sunucudan atıldınız.");
+                executeCommand(kickMessage.replace("%player%", playerName));
+                break;
+                
+            case "ban":
+                // Oyuncuyu yasakla (varsayılan 1 gün)
+                String banTime = plugin.getConfig().getString("action-recommendations.ban-time", "1d");
+                String banMessage = plugin.getConfig().getString("action-recommendations.ban", 
+                        "tempban %player% %time% Uygunsuz içerik nedeniyle geçici olarak yasaklandınız.");
+                executeCommand(banMessage.replace("%player%", playerName).replace("%time%", banTime));
+                break;
+                
+            default:
+                // Tanınmayan aksiyon türü için varsayılan olarak genel komutları çalıştır
+                if (commandsEnabled && !commands.isEmpty()) {
+                    for (String cmd : commands) {
+                        String finalCmd = cmd.replace("%player%", playerName).replace("%message%", message);
+                        executeCommand(finalCmd);
+                    }
+                }
+                break;
         }
     }
     

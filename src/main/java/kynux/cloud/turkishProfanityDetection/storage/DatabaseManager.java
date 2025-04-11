@@ -105,54 +105,152 @@ public class DatabaseManager {
      * @param config Yapılandırma dosyası
      */
     private void setupMySQLConnection(FileConfiguration config) {
+        long startTime = System.currentTimeMillis();
+        
         String host = config.getString("statistics.mysql.host", "localhost");
         int port = config.getInt("statistics.mysql.port", 3306);
         String database = config.getString("statistics.mysql.database", "minecraft");
         String username = config.getString("statistics.mysql.username", "root");
         String password = config.getString("statistics.mysql.password", "");
         
-        HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + 
-                "?useSSL=false&useUnicode=true&characterEncoding=utf8");
-        hikariConfig.setUsername(username);
-        hikariConfig.setPassword(password);
-        hikariConfig.setMaximumPoolSize(10);
-        hikariConfig.setMinimumIdle(2);
-        hikariConfig.setConnectionTimeout(30000);
-        hikariConfig.setIdleTimeout(600000);
-        hikariConfig.setMaxLifetime(1800000);
-        hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
-        hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
-        hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
-        
-    try {
-        dataSource = new HikariDataSource(hikariConfig);
-        createTables();
-        logger.info("MySQL veritabanına başarıyla bağlanıldı: " + host + ":" + port + "/" + database);
-    } catch (Exception e) {
-        String errorMessage = (e != null) ? (e.getMessage() != null ? e.getMessage() : "Bilinmeyen hata") : "Null hata nesnesi";
-        logger.severe("MySQL bağlantısı kurulamadı: " + errorMessage);
-        if (e != null) {
-            e.printStackTrace();
+        try {
+            // CPU çekirdek sayısına göre bağlantı havuzu boyutunu ayarla
+            int availableCores = Runtime.getRuntime().availableProcessors();
+            int poolSize = Math.min(availableCores * 2, 20); // Maksimum 20 bağlantı
+            
+            HikariConfig hikariConfig = new HikariConfig();
+            
+            // Temel bağlantı parametreleri
+            hikariConfig.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + 
+                    "?useSSL=false&useUnicode=true&characterEncoding=utf8" +
+                    "&rewriteBatchedStatements=true" + // Toplu sorgular için optimizasyon
+                    "&useLocalSessionState=true" + // Oturum durumu için optimizasyon
+                    "&cacheServerConfiguration=true" + // Sunucu yapılandırması önbellekleme
+                    "&cacheResultSetMetadata=true" + // Sonuç kümesi metadata önbellekleme
+                    "&elideSetAutoCommits=true" + // AutoCommit performans optimizasyonu
+                    "&maintainTimeStats=false" + // JDBC sürücüsü zaman istatistiklerini devre dışı bırak
+                    "&useCompression=true"); // Ağ trafiği sıkıştırması (yüksek gecikme ağlarında faydalı)
+            
+            hikariConfig.setUsername(username);
+            hikariConfig.setPassword(password);
+            
+            // Bağlantı havuzu parametreleri
+            hikariConfig.setMaximumPoolSize(poolSize);
+            hikariConfig.setMinimumIdle(Math.max(2, poolSize / 4)); // En az 2 veya pool'un 1/4'ü
+            hikariConfig.setConnectionTimeout(10000); // 10 saniye (varsayılan 30)
+            hikariConfig.setIdleTimeout(300000); // 5 dakika (varsayılan 10 dakika)
+            hikariConfig.setMaxLifetime(900000); // 15 dakika (varsayılan 30 dakika)
+            hikariConfig.setAutoCommit(true);
+            hikariConfig.setKeepaliveTime(60000); // 60 saniye (boşta kalan bağlantıları canlı tut)
+            
+            // Performans ayarları
+            hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+            hikariConfig.addDataSourceProperty("prepStmtCacheSize", "500"); // Önceki 250
+            hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "4096"); // Önceki 2048
+            hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
+            hikariConfig.addDataSourceProperty("useLocalSessionState", "true");
+            hikariConfig.addDataSourceProperty("alwaysSendSetIsolation", "false");
+            hikariConfig.addDataSourceProperty("cacheCallableStmts", "true");
+            hikariConfig.addDataSourceProperty("cacheResultSetMetadata", "true");
+            hikariConfig.addDataSourceProperty("metadataCacheSize", "1024");
+            hikariConfig.addDataSourceProperty("tcpKeepAlive", "true");
+            
+            // Bağlantı testleri
+            hikariConfig.setConnectionTestQuery("SELECT 1");
+            hikariConfig.setLeakDetectionThreshold(60000); // 60 saniye sonra sızıntı uyarısı
+            
+            // Havuz adı
+            hikariConfig.setPoolName("TPD-MySQL-Pool");
+            
+            // HikariCP JMX izleme (opsiyonel)
+            hikariConfig.setRegisterMbeans(true);
+            
+            // Yeni veri kaynağını oluştur
+            dataSource = new HikariDataSource(hikariConfig);
+            
+            // Tabloları oluştur
+            boolean tablesCreated = createTables();
+            
+            // Veritabanı optimizasyonlarını kontrol et ve uygula
+            if (tablesCreated) {
+                optimizeTables();
+            }
+            
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            logger.info("MySQL veritabanına başarıyla bağlanıldı: " + host + ":" + port + "/" + database + 
+                       " (" + elapsedTime + "ms, Havuz Boyutu: " + poolSize + ")");
+            
+        } catch (Exception e) {
+            String errorMessage = (e != null) ? (e.getMessage() != null ? e.getMessage() : "Bilinmeyen hata") : "Null hata nesnesi";
+            logger.severe("MySQL bağlantısı kurulamadı: " + errorMessage);
+            if (e != null) {
+                e.printStackTrace();
+            }
         }
-    }
     }
     
     /**
      * Veritabanı tablolarını oluşturur.
+     * 
+     * @return Tablolar başarıyla oluşturulduysa true
      */
-    private void createTables() {
+    private boolean createTables() {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             
             stmt.execute(CREATE_PLAYERS_TABLE);
             stmt.execute(CREATE_RECORDS_TABLE);
-            logger.info("Veritabanı tabloları başarıyla oluşturuldu veya güncellendi.");
+            logger.info("Veritabanı tabloları başarıyla oluşturuldu veya güncellendi");
+            return true;
             
         } catch (SQLException e) {
             logger.severe("Tablolar oluşturulurken hata: " + e.getMessage());
             e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Veritabanı tablolarını optimize eder.
+     * İndeksler ekler ve tablo istatistiklerini günceller.
+     */
+    private void optimizeTables() {
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            // İndeksleri kontrol et ve gerekirse ekle
+            try {
+                // Oyuncu tablosu için indeksler
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_" + prefix + "players_uuid ON " + 
+                           prefix + "players (uuid)");
+                
+                // Kayıtlar tablosu için indeksler
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_" + prefix + "records_player_id ON " + 
+                           prefix + "records (player_id)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_" + prefix + "records_timestamp ON " + 
+                           prefix + "records (timestamp)");
+                stmt.execute("CREATE INDEX IF NOT EXISTS idx_" + prefix + "records_severity ON " + 
+                           prefix + "records (severity_level)");
+                
+                logger.info("Veritabanı indeksleri başarıyla oluşturuldu");
+            } catch (SQLException e) {
+                // IF NOT EXISTS MySQL 5.7+ içindir, daha eski versiyonlar için hata verebilir
+                logger.warning("İndeksler oluşturulurken hata: " + e.getMessage() + 
+                             " - Bu veritabanı sürümünde indeks oluşturma sözdizimi desteklenmeyebilir");
+            }
+            
+            // Tablo istatistiklerini güncelle
+            try {
+                stmt.execute("ANALYZE TABLE " + prefix + "players");
+                stmt.execute("ANALYZE TABLE " + prefix + "records");
+                logger.info("Tablo istatistikleri güncellendi");
+            } catch (SQLException e) {
+                // Bazı MySQL versiyonları veya farklı veritabanları desteklemeyebilir
+                logger.fine("Tablo istatistikleri güncellenemedi: " + e.getMessage());
+            }
+            
+        } catch (SQLException e) {
+            logger.warning("Veritabanı optimizasyonu yapılırken hata: " + e.getMessage());
         }
     }
     
@@ -228,23 +326,137 @@ public class DatabaseManager {
             return false;
         }
         
+        long startTime = System.currentTimeMillis();
+        
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(INSERT_RECORD)) {
             
+            // Sorguyu hazırla
             stmt.setInt(1, playerId);
             stmt.setString(2, record.getWord());
             stmt.setString(3, record.getCategory());
             stmt.setInt(4, record.getSeverityLevel());
             stmt.setString(5, record.getOriginalMessage());
-            stmt.setString(6, String.join(",", record.getDetectedWords())); // Basit bir şekilde virgülle ayrılmış liste
+            
+            // Tespit edilen kelimeler JSON formatında saklanırsa daha iyi olabilir
+            // Ancak basitlik için virgülle ayrılmış listeyi kullanıyoruz
+            stmt.setString(6, String.join(",", record.getDetectedWords()));
+            
             stmt.setString(7, record.getTimestamp().format(dateFormatter));
             stmt.setBoolean(8, record.isAiDetected());
             
-            return stmt.executeUpdate() > 0;
+            // Sorguyu çalıştır
+            boolean result = stmt.executeUpdate() > 0;
+            
+            // Çok fazla log basma, ancak debug açıksa veya sorgu yavaşsa logla
+            long queryTime = System.currentTimeMillis() - startTime;
+            if (queryTime > 100) {  // 100ms'den uzun süren sorgular için uyarı
+                logger.fine("Yavaş küfür kaydı ekleme sorgusu: " + queryTime + "ms");
+            }
+            
+            return result;
             
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Küfür kaydı eklenirken hata: " + e.getMessage(), e);
             return false;
+        }
+    }
+    
+    /**
+     * Birden fazla küfür kaydını toplu olarak ekler. 
+     * Büyük veri setleri için tekli kaydetmeden çok daha verimlidir.
+     *
+     * @param records Eklenecek kayıtlar listesi
+     * @return Eklenen kayıt sayısı
+     */
+    public int addRecordsBatch(List<ProfanityRecord> records) {
+        if (!storageType.equals("mysql") || dataSource == null || records == null || records.isEmpty()) {
+            return 0;
+        }
+        
+        int addedCount = 0;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement playerStmt = conn.prepareStatement(INSERT_PLAYER, Statement.RETURN_GENERATED_KEYS);
+             PreparedStatement selectPlayerStmt = conn.prepareStatement(GET_PLAYER_BY_UUID);
+             PreparedStatement recordStmt = conn.prepareStatement(INSERT_RECORD)) {
+            
+            // Auto-commit'i devre dışı bırak
+            conn.setAutoCommit(false);
+            
+            // Oyuncu ID'lerini önbelleğe al
+            Map<UUID, Integer> playerIdCache = new HashMap<>();
+            
+            for (ProfanityRecord record : records) {
+                // Oyuncu ID'sini bul veya oluştur
+                int playerId;
+                UUID playerUUID = record.getPlayerId();
+                
+                if (playerIdCache.containsKey(playerUUID)) {
+                    playerId = playerIdCache.get(playerUUID);
+                } else {
+                    // Önce mevcut oyuncuyu bul
+                    selectPlayerStmt.setString(1, playerUUID.toString());
+                    try (ResultSet rs = selectPlayerStmt.executeQuery()) {
+                        if (rs.next()) {
+                            playerId = rs.getInt("id");
+                        } else {
+                            // Yeni oyuncu ekle
+                            playerStmt.setString(1, playerUUID.toString());
+                            playerStmt.setString(2, record.getPlayerName());
+                            playerStmt.executeUpdate();
+                            
+                            try (ResultSet generatedKeys = playerStmt.getGeneratedKeys()) {
+                                if (generatedKeys.next()) {
+                                    playerId = generatedKeys.getInt(1);
+                                } else {
+                                    throw new SQLException("Oyuncu oluşturuldu fakat ID alınamadı");
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Önbelleğe ekle
+                    playerIdCache.put(playerUUID, playerId);
+                }
+                
+                // Kayıt sorgusunu doldur ve batch'e ekle
+                recordStmt.setInt(1, playerId);
+                recordStmt.setString(2, record.getWord());
+                recordStmt.setString(3, record.getCategory());
+                recordStmt.setInt(4, record.getSeverityLevel());
+                recordStmt.setString(5, record.getOriginalMessage());
+                recordStmt.setString(6, String.join(",", record.getDetectedWords()));
+                recordStmt.setString(7, record.getTimestamp().format(dateFormatter));
+                recordStmt.setBoolean(8, record.isAiDetected());
+                recordStmt.addBatch();
+                
+                // Her 100 kayıtta bir batch'i çalıştır
+                if (++addedCount % 100 == 0) {
+                    recordStmt.executeBatch();
+                    recordStmt.clearBatch();
+                }
+            }
+            
+            // Kalan batch'i çalıştır
+            int[] results = recordStmt.executeBatch();
+            
+            // İşlemi tamamla
+            conn.commit();
+            
+            // Eklenen kayıt sayısını say
+            addedCount = 0;
+            for (int result : results) {
+                if (result > 0) {
+                    addedCount += result;
+                }
+            }
+            
+            return addedCount;
+            
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Toplu küfür kaydı eklenirken hata: " + e.getMessage(), e);
+            return 0;
         }
     }
     
@@ -313,7 +525,7 @@ public class DatabaseManager {
      * Bir oyuncunun tüm küfür kayıtlarını temizler.
      * 
      * @param playerId Oyuncu UUID
-     * @return Başarılı ise true
+     * @return Başarılı ise true, kayıt yoksa veya hata oluştuysa false
      */
     public boolean clearPlayerRecords(UUID playerId) {
         if (!storageType.equals("mysql") || dataSource == null) {
@@ -323,8 +535,24 @@ public class DatabaseManager {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(DELETE_PLAYER_RECORDS)) {
             
+            // Auto-commit'i devre dışı bırak
+            conn.setAutoCommit(false);
+            
+            // Sorguyu hazırla ve çalıştır
             stmt.setString(1, playerId.toString());
-            return stmt.executeUpdate() > 0;
+            int affectedRows = stmt.executeUpdate();
+            
+            // İşlemi tamamla
+            conn.commit();
+            
+            // Log işlemleri
+            if (affectedRows > 0) {
+                logger.info(playerId + " ID'li oyuncunun " + affectedRows + " kaydı silindi");
+            } else {
+                logger.fine(playerId + " ID'li oyuncunun silinecek kaydı bulunamadı");
+            }
+            
+            return affectedRows > 0;
             
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Oyuncu kayıtları temizlenirken hata: " + e.getMessage(), e);

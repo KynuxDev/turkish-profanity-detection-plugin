@@ -1,5 +1,6 @@
 package kynux.cloud.turkishProfanityDetection.api;
 
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
@@ -7,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * API'den dönen küfür tespiti yanıtı için model sınıfı.
+ * Yeni minecraft-check endpoint yanıtları için güncellenmiştir.
  */
 public class ProfanityResponse {
     private boolean success;
@@ -161,23 +163,119 @@ public class ProfanityResponse {
 
     public static class Result {
         private boolean isSwear;
-        private Details details;
-        private boolean aiDetected;
+        private String word;
+        private String category;
+        private int severityLevel;
+        private double confidence;
+        private String actionRecommendation;
+        private String model;
+        private String detectedAt;
+        private boolean isSafeForMinecraft;
+        private List<String> detectedWords; // Eski format için tutuyoruz
 
         public boolean isSwear() {
             return isSwear;
         }
+        
+        public boolean isSafeForMinecraft() {
+            return isSafeForMinecraft;
+        }
+        
+        public double getConfidence() {
+            return confidence;
+        }
+        
+        public String getModel() {
+            return model != null ? model : "";
+        }
+        
+        public String getDetectedAt() {
+            return detectedAt != null ? detectedAt : "";
+        }
+        
+        public String getActionRecommendation() {
+            return actionRecommendation != null ? actionRecommendation : "";
+        }
 
+        /**
+         * Tespit edilen küfür detaylarını döndürür (geriye uyumluluk için).
+         * NOT: Bu metod artık bir Details nesnesi döndürmez çünkü yeni API
+         * formatında detaylar ana Result objesine taşınmıştır.
+         *
+         * @return Küfür detayları
+         */
         @Nullable
         public Details getDetails() {
+            if (!isSwear || word == null) {
+                return null;
+            }
+            
+            // Eski format uyumluluğu için Details oluştur
+            Details details = new Details();
+            details.word = word;
+            details.category = category;
+            details.severityLevel = severityLevel;
+            details.detectedWords = detectedWords != null ? detectedWords : Collections.singletonList(word);
+            
             return details;
         }
 
         public boolean isAiDetected() {
-            return aiDetected;
+            return model != null && !model.isEmpty();
+        }
+        
+        /**
+         * Küfür kelimesini doğrudan ana Result objesinden döndürür.
+         *
+         * @return Tespit edilen küfür kelimesi
+         */
+        @NotNull
+        public String getWord() {
+            return word != null ? word : "";
+        }
+
+        /**
+         * Kategoriyi doğrudan ana Result objesinden döndürür.
+         *
+         * @return Küfür kategorisi
+         */
+        @NotNull
+        public String getCategory() {
+            return category != null ? category : "bilinmeyen";
+        }
+
+        /**
+         * Şiddet seviyesini doğrudan ana Result objesinden döndürür.
+         *
+         * @return Küfür şiddet seviyesi (1-5 arası)
+         */
+        public int getSeverityLevel() {
+            return severityLevel;
+        }
+        
+        /**
+         * Tespit edilen kelimelerin listesini döndürür.
+         * NOT: Yeni API formatında bu alan mevcut değildir,
+         * geriye uyumluluk için tutulmaktadır.
+         *
+         * @return Tespit edilen kelimelerin listesi
+         */
+        @NotNull
+        public List<String> getDetectedWords() {
+            if (detectedWords != null) {
+                return detectedWords;
+            } else if (word != null) {
+                return Collections.singletonList(word);
+            }
+            return Collections.emptyList();
         }
     }
 
+    /**
+     * Geriye uyumluluk için Details sınıfı.
+     * NOT: Yeni API formatında details ayrı bir nesne değildir,
+     * tüm bilgiler ana Result objesindedir.
+     */
     public static class Details {
         private String word;
         private String category;
