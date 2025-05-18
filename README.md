@@ -103,7 +103,7 @@
 
 ## 🚀 Kurulum
 
-1. [TurkishProfanityDetection-1.0.1.jar](https://github.com/KynuxDev/turkish-profanity-detection-plugin/releases/tag/V1.0.1) dosyasını indirin
+1. [kufurtespit.jar](https://github.com/KynuxDev/turkish-profanity-detection-plugin/releases/tag/V1.0.1) dosyasını indirin
 2. Dosyayı sunucunuzun `plugins` klasörüne yerleştirin
 3. Sunucuyu yeniden başlatın
 4. İsteğe bağlı olarak `config.yml` dosyasını özelleştirin
