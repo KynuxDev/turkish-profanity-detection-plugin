@@ -52,3 +52,5 @@ nbdist/
 .nb-gradle/
 target/classes/kynux/cloud/turkishProfanityDetection/storage/ProfanityStorage.class
 target/classes/config.yml
+target/classes/config.yml
+target/classes/kynux/cloud/turkishProfanityDetection/storage/ProfanityStorage.class
