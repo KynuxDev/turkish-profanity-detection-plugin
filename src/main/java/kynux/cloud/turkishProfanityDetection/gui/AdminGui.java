@@ -20,9 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Admin arayüzünü yöneten sınıf.
- */
 public class AdminGui {
     private final TurkishProfanityDetection plugin;
     private final ProfanityStorage storage;
@@ -35,12 +32,6 @@ public class AdminGui {
     private static final Map<UUID, Integer> playerStatsPages = new HashMap<>();
     private static final Map<UUID, UUID> selectedPlayers = new HashMap<>();
     
-    /**
-     * Admin GUI yöneticisini başlatır.
-     *
-     * @param plugin Ana plugin sınıfı
-     * @param storage Depolama servisi
-     */
     public AdminGui(@NotNull TurkishProfanityDetection plugin, @NotNull ProfanityStorage storage) {
         this.plugin = plugin;
         this.storage = storage;
@@ -57,15 +48,9 @@ public class AdminGui {
         this.itemsPerPage = Math.min(Math.max(config.getInt("gui.stats-menu.items-per-page", 36), 1), 45);
     }
     
-    /**
-     * Ana admin menüsünü gösterir.
-     *
-     * @param player Menüyü gösterilecek oyuncu
-     */
     public void openAdminMenu(@NotNull Player player) {
         Inventory inventory = Bukkit.createInventory(null, adminMenuRows * 9, adminMenuTitle);
         
-        // Oyuncu listesi
         ItemStack playersItem = createItem(VersionUtil.getPlayerHeadMaterial(), 
                 "&b&lOyuncu Listesi", 
                 Arrays.asList(
@@ -74,7 +59,6 @@ public class AdminGui {
                 ));
         inventory.setItem(11, playersItem);
         
-        // Tüm istatistikleri temizle
         ItemStack clearAllItem = createItem(VersionUtil.getBarrierMaterial(), 
                 "&c&lTüm İstatistikleri Temizle", 
                 Arrays.asList(
@@ -84,7 +68,6 @@ public class AdminGui {
                 ));
         inventory.setItem(15, clearAllItem);
         
-        // Config yenile
         ItemStack reloadItem = createItem(VersionUtil.getRepeaterMaterial(), 
                 "&a&lYeniden Yükle", 
                 Arrays.asList(
@@ -94,7 +77,6 @@ public class AdminGui {
                 ));
         inventory.setItem(31, reloadItem);
         
-        // Bilgi
         ItemStack infoItem = createItem(VersionUtil.getBookMaterial(), 
                 "&e&lEklenti Bilgisi", 
                 Arrays.asList(
@@ -106,7 +88,6 @@ public class AdminGui {
                 ));
         inventory.setItem(40, infoItem);
         
-        // Kenarlık ekle
         for (int i = 0; i < inventory.getSize(); i++) {
             if (inventory.getItem(i) == null) {
                 if (i < 9 || i >= inventory.getSize() - 9 || i % 9 == 0 || i % 9 == 8) {
@@ -118,49 +99,35 @@ public class AdminGui {
         player.openInventory(inventory);
     }
     
-    /**
-     * Oyuncu listesi menüsünü gösterir.
-     *
-     * @param player Menüyü gösterilecek oyuncu
-     * @param page Gösterilecek sayfa
-     */
     public void openPlayerListMenu(@NotNull Player player, int page) {
         Map<UUID, List<ProfanityRecord>> allRecords = storage.getAllRecords();
         
-        // Kayıt yok ise bilgi ver
         if (allRecords.isEmpty()) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', 
                     plugin.getConfig().getString("messages.prefix") + "&7Hiç küfür istatistiği bulunamadı."));
             return;
         }
         
-        // Kayıtları oyuncu sayısına göre grupla
         List<UUID> playerIds = new ArrayList<>(allRecords.keySet());
         
-        // Sayfa sayısı
         int maxPages = (int) Math.ceil((double) playerIds.size() / itemsPerPage);
         if (page < 0) page = 0;
         if (page >= maxPages) page = maxPages - 1;
         playerStatsPages.put(player.getUniqueId(), page);
         
-        // Inventory oluştur
         Inventory inventory = Bukkit.createInventory(null, statsMenuRows * 9, 
                 statsMenuTitle + " - Sayfa " + (page + 1) + "/" + maxPages);
         
-        // Önceki sayfa
         if (page > 0) {
             inventory.setItem(statsMenuRows * 9 - 9, createItem(VersionUtil.getArrowMaterial(), "&7Önceki Sayfa", null));
         }
         
-        // Sonraki sayfa
         if (page < maxPages - 1) {
             inventory.setItem(statsMenuRows * 9 - 1, createItem(VersionUtil.getArrowMaterial(), "&7Sonraki Sayfa", null));
         }
         
-        // Geri dönüş butonu
         inventory.setItem(statsMenuRows * 9 - 5, createItem(VersionUtil.getBarrierMaterial(), "&cGeri Dön", null));
         
-        // Oyuncuları listele
         int startIdx = page * itemsPerPage;
         int endIdx = Math.min(startIdx + itemsPerPage, playerIds.size());
         
@@ -196,17 +163,9 @@ public class AdminGui {
         player.openInventory(inventory);
     }
     
-    /**
-     * Bir oyuncunun küfür istatistiklerini gösterir.
-     *
-     * @param viewer Menüyü gösterilecek admin
-     * @param targetPlayerId Hedef oyuncunun UUID'si
-     * @param page Gösterilecek sayfa
-     */
     public void openPlayerStatsMenu(@NotNull Player viewer, @NotNull UUID targetPlayerId, int page) {
         List<ProfanityRecord> records = storage.getPlayerRecords(targetPlayerId);
         
-        // Oyuncu adını bul
         String playerName = "Bilinmeyen Oyuncu";
         if (!records.isEmpty()) {
             playerName = records.get(0).getPlayerName();
@@ -218,34 +177,27 @@ public class AdminGui {
             return;
         }
         
-        // Sayfa sayısı
         int maxPages = (int) Math.ceil((double) records.size() / itemsPerPage);
         if (page < 0) page = 0;
         if (page >= maxPages) page = maxPages - 1;
         
-        // Inventory oluştur
         Inventory inventory = Bukkit.createInventory(null, statsMenuRows * 9, 
                 statsMenuTitle + " - " + playerName + " (" + (page + 1) + "/" + maxPages + ")");
         
-        // Önceki sayfa
         if (page > 0) {
             inventory.setItem(statsMenuRows * 9 - 9, createItem(VersionUtil.getArrowMaterial(), "&7Önceki Sayfa", null));
         }
         
-        // Sonraki sayfa
         if (page < maxPages - 1) {
             inventory.setItem(statsMenuRows * 9 - 1, createItem(VersionUtil.getArrowMaterial(), "&7Sonraki Sayfa", null));
         }
         
-        // Geri dönüş butonu
         inventory.setItem(statsMenuRows * 9 - 6, createItem(VersionUtil.getArrowMaterial(), "&aOyuncu Listesine Dön", null));
         
-        // Temizle butonu
         inventory.setItem(statsMenuRows * 9 - 4, createItem(VersionUtil.getBarrierMaterial(), 
                 "&c" + playerName + " İstatistiklerini Temizle", 
                 Collections.singletonList("&7Bu oyuncunun tüm istatistiklerini siler.")));
         
-        // İstatistikleri listele (tarih sırasıyla ters)
         Collections.reverse(records);
         int startIdx = page * itemsPerPage;
         int endIdx = Math.min(startIdx + itemsPerPage, records.size());
@@ -281,7 +233,6 @@ public class AdminGui {
             lore.add("");
             lore.add(ChatColor.GRAY + "Orijinal Mesaj:");
             
-            // Mesajı 30 karakterlik parçalara böl
             String message = record.getOriginalMessage();
             for (int j = 0; j < message.length(); j += 30) {
                 int end = Math.min(j + 30, message.length());
@@ -295,17 +246,8 @@ public class AdminGui {
         viewer.openInventory(inventory);
     }
     
-    /**
-     * Öğe oluşturmak için yardımcı metod.
-     *
-     * @param material Öğe materyali
-     * @param name Öğe adı
-     * @param lore Öğe açıklaması
-     * @return Oluşturulan öğe
-     */
     private ItemStack createItem(Material material, String name, List<String> lore) {
         ItemStack item;
-        // 1.13'den önceki sürümler için özel data değeri kontrolü
         if (!VersionUtil.isVersion1_13Plus() && material == VersionUtil.getPlayerHeadMaterial()) {
             item = VersionUtil.createItem(material, (byte) 3);
         } else {
@@ -332,32 +274,14 @@ public class AdminGui {
         return item;
     }
     
-    /**
-     * Oyuncunun seçili oyuncu bilgisini getirir.
-     *
-     * @param player Admin oyuncu
-     * @return Seçili oyuncunun UUID'si
-     */
     public UUID getSelectedPlayer(Player player) {
         return selectedPlayers.get(player.getUniqueId());
     }
     
-    /**
-     * Oyuncunun seçili oyuncusunu ayarlar.
-     *
-     * @param player Admin oyuncu
-     * @param targetId Hedef oyuncunun UUID'si
-     */
     public void setSelectedPlayer(Player player, UUID targetId) {
         selectedPlayers.put(player.getUniqueId(), targetId);
     }
     
-    /**
-     * Oyuncunun geçerli sayfa numarasını getirir.
-     *
-     * @param player Oyuncu
-     * @return Sayfa numarası
-     */
     public int getCurrentPage(Player player) {
         return playerStatsPages.getOrDefault(player.getUniqueId(), 0);
     }

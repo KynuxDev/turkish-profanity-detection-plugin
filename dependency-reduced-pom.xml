@@ -4,7 +4,7 @@
   <groupId>kynux.cloud</groupId>
   <artifactId>kufurtespit</artifactId>
   <name>KufurTespit</name>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <build>
     <defaultGoal>clean package</defaultGoal>
     <resources>
@@ -68,7 +68,7 @@
     </dependency>
   </dependencies>
   <properties>
-    <java.version>17</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>17</java.version>
   </properties>
 </project>

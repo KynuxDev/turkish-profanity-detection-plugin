@@ -19,19 +19,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Admin GUI etkileşimlerini dinleyen sınıf.
- */
 public class GuiListener implements Listener {
     private final TurkishProfanityDetection plugin;
     private final String statsMenuTitle;
     private final String adminMenuTitle;
     
-    /**
-     * GUI dinleyiciyi başlatır.
-     *
-     * @param plugin Ana plugin sınıfı
-     */
     public GuiListener(@NotNull TurkishProfanityDetection plugin) {
         this.plugin = plugin;
         
@@ -41,11 +33,6 @@ public class GuiListener implements Listener {
                 plugin.getConfig().getString("gui.stats-menu.title", "&8[&b📊&8] &fKüfür İstatistikleri"));
     }
     
-    /**
-     * Envanter tıklama olaylarını dinler.
-     *
-     * @param event Envanter tıklama olayı
-     */
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) {
@@ -55,7 +42,6 @@ public class GuiListener implements Listener {
         Player player = (Player) event.getWhoClicked();
         String title = event.getView().getTitle();
         
-        // Admin menüsü işlemleri
         if (title.equals(adminMenuTitle)) {
             event.setCancelled(true);
             
@@ -63,21 +49,20 @@ public class GuiListener implements Listener {
                 return;
             }
             
-            if (event.getSlot() == 11) { // Oyuncu listesi
+            if (event.getSlot() == 11) {
                 plugin.getAdminGui().openPlayerListMenu(player, 0);
-            } else if (event.getSlot() == 15) { // Tüm istatistikleri temizle
+            } else if (event.getSlot() == 15) {
                 plugin.getProfanityStorage().clearAllRecords();
                 MessageUtils.sendMessage(player, plugin.getConfig().getString("messages.prefix") + 
                         "&aTüm küfür istatistikleri temizlendi!");
                 player.closeInventory();
-            } else if (event.getSlot() == 31) { // Yeniden yükle
+            } else if (event.getSlot() == 31) {
                 plugin.reloadPlugin();
                 MessageUtils.sendMessage(player, plugin.getConfig().getString("messages.prefix") + 
                         plugin.getConfig().getString("messages.reload", "&aEklenti yeniden yüklendi!"));
                 player.closeInventory();
             }
         }
-        // İstatistik menüsü işlemleri
         else if (title.startsWith(statsMenuTitle)) {
             event.setCancelled(true);
             
@@ -87,36 +72,29 @@ public class GuiListener implements Listener {
             
             int currentPage = plugin.getAdminGui().getCurrentPage(player);
             
-            // Oyuncu listesi sayfasında
             if (title.contains("Sayfa")) {
-                if (event.getSlot() == event.getInventory().getSize() - 9) { // Önceki sayfa
+                if (event.getSlot() == event.getInventory().getSize() - 9) {
                     plugin.getAdminGui().openPlayerListMenu(player, currentPage - 1);
-                } else if (event.getSlot() == event.getInventory().getSize() - 1) { // Sonraki sayfa
+                } else if (event.getSlot() == event.getInventory().getSize() - 1) {
                     plugin.getAdminGui().openPlayerListMenu(player, currentPage + 1);
-                } else if (event.getSlot() == event.getInventory().getSize() - 5) { // Ana menüye dön
+                } else if (event.getSlot() == event.getInventory().getSize() - 5) {
                     plugin.getAdminGui().openAdminMenu(player);
-                } else if (event.getCurrentItem().getType() == VersionUtil.getPlayerHeadMaterial()) { // Oyuncu seçimi
+                } else if (event.getCurrentItem().getType() == VersionUtil.getPlayerHeadMaterial()) {
                     ItemStack item = event.getCurrentItem();
                     SkullMeta meta = (SkullMeta) item.getItemMeta();
                     
                     if (meta != null && meta.getOwningPlayer() != null) {
                         OfflinePlayer target = meta.getOwningPlayer();
-                        
-                        // Oyuncu UUID'sini bul
                         UUID targetId = target.getUniqueId();
-                        
-                        // Seçili oyuncuyu ayarla ve oyuncu detaylarını aç
                         plugin.getAdminGui().setSelectedPlayer(player, targetId);
                         plugin.getAdminGui().openPlayerStatsMenu(player, targetId, 0);
                     }
                 }
             }
-            // Oyuncu detayları sayfasında
             else if (title.contains("(")) {
                 UUID selectedPlayerId = plugin.getAdminGui().getSelectedPlayer(player);
                 
                 if (selectedPlayerId != null) {
-                    // Sayfa numarasını çıkar
                     int page = 0;
                     if (title.contains("(") && title.contains(")")) {
                         String pageStr = title.substring(title.lastIndexOf("(") + 1, title.lastIndexOf(")"));
@@ -129,25 +107,22 @@ public class GuiListener implements Listener {
                         }
                     }
                     
-                    if (event.getSlot() == event.getInventory().getSize() - 9) { // Önceki sayfa
+                    if (event.getSlot() == event.getInventory().getSize() - 9) {
                         plugin.getAdminGui().openPlayerStatsMenu(player, selectedPlayerId, page - 1);
-                    } else if (event.getSlot() == event.getInventory().getSize() - 1) { // Sonraki sayfa
+                    } else if (event.getSlot() == event.getInventory().getSize() - 1) {
                         plugin.getAdminGui().openPlayerStatsMenu(player, selectedPlayerId, page + 1);
-                    } else if (event.getSlot() == event.getInventory().getSize() - 6) { // Oyuncu listesine dön
+                    } else if (event.getSlot() == event.getInventory().getSize() - 6) {
                         plugin.getAdminGui().openPlayerListMenu(player, currentPage);
-                    } else if (event.getSlot() == event.getInventory().getSize() - 4) { // İstatistikleri temizle
+                    } else if (event.getSlot() == event.getInventory().getSize() - 4) {
                         plugin.getProfanityStorage().clearPlayerRecords(selectedPlayerId);
                         
-                        // Oyuncu adını bul
                         String playerName = "Bilinmeyen Oyuncu";
                         Map<UUID, String> playerNames = new java.util.HashMap<>();
                         
-                        // Mesajı gönder
                         MessageUtils.sendMessage(player, plugin.getConfig().getString("messages.prefix") + 
                                 plugin.getConfig().getString("messages.admin.cleared-stats", "&a%player% için tüm küfür istatistikleri temizlendi.")
                                         .replace("%player%", playerName));
                         
-                        // Oyuncu listesine geri dön
                         plugin.getAdminGui().openPlayerListMenu(player, currentPage);
                     }
                 }
@@ -155,17 +130,11 @@ public class GuiListener implements Listener {
         }
     }
     
-    /**
-     * Envanter kapanma olaylarını dinler.
-     *
-     * @param event Envanter kapanma olayı
-     */
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player)) {
             return;
         }
         
-        // Burada ileride gerekirse ek işlemler yapılabilir
     }
 }

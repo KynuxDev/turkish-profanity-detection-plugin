@@ -13,9 +13,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Discord webhook entegrasyonu için kullanılan sınıf.
- */
 public class DiscordWebhook {
     private final JavaPlugin plugin;
     private final Logger logger;
@@ -28,11 +25,6 @@ public class DiscordWebhook {
     private final int notifySeverityLevel;
     private final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
-    /**
-     * Discord webhook entegrasyonunu yapılandırır.
-     *
-     * @param plugin Eklenti ana sınıfı
-     */
     public DiscordWebhook(@NotNull JavaPlugin plugin) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
@@ -43,7 +35,6 @@ public class DiscordWebhook {
         this.username = config.getString("actions.discord.username", "Küfür Koruması");
         this.avatarUrl = config.getString("actions.discord.avatar-url", "");
         
-        // Embed renk kodunu parse et
         String colorHex = config.getString("actions.discord.embed-color", "#FF0000").replace("#", "");
         Color parsedColor;
         try {
@@ -54,7 +45,6 @@ public class DiscordWebhook {
         }
         this.embedColor = parsedColor;
         
-        // Minimum bildirim seviyesi
         this.notifySeverityLevel = config.getInt("actions.discord.notify-severity-level", 3);
         
         this.client = new OkHttpClient();
@@ -64,25 +54,17 @@ public class DiscordWebhook {
         }
     }
 
-    /**
-     * Bir küfür kaydını Discord'a gönderir.
-     *
-     * @param record Gönderilecek küfür kaydı
-     */
     public void sendProfanityAlert(@NotNull ProfanityRecord record) {
         if (!enabled || webhookUrl == null || webhookUrl.isEmpty()) {
             return;
         }
         
-        // Şiddet seviyesi kontrolü
         if (record.getSeverityLevel() < notifySeverityLevel) {
             return;
         }
         
-        // JSON oluştur
         JsonObject json = new JsonObject();
         
-        // Webhook kullanıcı adı ve avatarı
         if (username != null && !username.isEmpty()) {
             json.addProperty("username", username);
         }
@@ -90,17 +72,13 @@ public class DiscordWebhook {
             json.addProperty("avatar_url", avatarUrl);
         }
         
-        // Embed oluştur
         JsonObject embed = new JsonObject();
         
-        // Embed rengi (decimal formatında)
         int colorValue = embedColor.getRed() << 16 | embedColor.getGreen() << 8 | embedColor.getBlue();
         embed.addProperty("color", colorValue);
         
-        // Başlık
         embed.addProperty("title", "Küfür Tespit Edildi");
         
-        // Açıklama
         String description = String.format(
                 "**Oyuncu:** %s\n" +
                 "**Kelime:** %s\n" +
@@ -119,24 +97,20 @@ public class DiscordWebhook {
         );
         embed.addProperty("description", description);
         
-        // Footer
         JsonObject footer = new JsonObject();
         footer.addProperty("text", "Turkish Profanity Detection • v" + plugin.getDescription().getVersion());
         embed.add("footer", footer);
         
-        // Embed'i ekle
         JsonObject embedsArray = new JsonObject();
         embedsArray.add("embeds", embed);
         json.add("embeds", embedsArray);
         
-        // Webhook'a gönder
         RequestBody body = RequestBody.create(json.toString(), JSON);
         Request request = new Request.Builder()
                 .url(webhookUrl)
                 .post(body)
                 .build();
         
-        // Asenkron olarak isteği gönder
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {

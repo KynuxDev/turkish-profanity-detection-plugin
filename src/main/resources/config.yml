@@ -1,27 +1,25 @@
 # Turkish Profanity Detection Ayarları
 
-# API ayarları
-api:
-  url: "http://api.kynux.cloud/api/swear/minecraft-check"
-  timeout: 30000 # milisaniye cinsinden (30 saniye)
-  
-  # Eski yapay zeka ayarları (geriye uyumluluk için tutuldu, yeni API endpoint ile kullanılmaz)
-  ai:
-    use: true
-    model: "claude-3.7-sonnet"
-    confidence: 0.1
-    
-  # Ek API parametreleri (isteğe bağlı)
-  additional-params:
-    enabled: false
-    list: "param1=value1,param2=value2"
+# Kynux AI API Ayarları (Ana Yapay Zeka Entegrasyonu)
+# Bu bölüm, eklentinin tüm küfür ve uygunsuz içerik analizlerini yönetir.
+kynux_api:
+  # Kynux AI Chat Completion API endpoint'i
+  url: "https://api.kynux.cloud/api/v1/chat/completion"
+  # Kynux AI API anahtarınız. Bu alanı DOLDURMANIZ GEREKİR.
+  # API anahtarınızı almak için: https://api.kynux.cloud/
+  key: "" 
+  # bu ayarı değiştirerek farklı bir model belirtebilirsiniz.
+  model: "o3-mini"
+  # https://api.kynux.cloud/docs/ai 
+  # Models: gpt-4o-mini,gemini-lite,grok-3-mini-beta,gpt-4o,gemini,o3-mini,grok-2
+  # API istekleri için zaman aşımı süresi (milisaniye cinsinden)
+  timeout: 30000 # 30 saniye
 
 # Küfür tespit edildiğinde uygulanacak işlemler
 actions:
   # Mesajı engellesin mi?
-  cancel-message: true
+  cancel-message: false
   
-  # API tarafından önerilen aksiyonlar (yeni minecraft-check API'si için)
   # Bu komutlar, AI tarafından önerilen aksiyon türlerine göre çalıştırılır
 action-recommendations:
   warn: "warn %player% Uygunsuz içerik tespit edildi. Lütfen dikkat ediniz."

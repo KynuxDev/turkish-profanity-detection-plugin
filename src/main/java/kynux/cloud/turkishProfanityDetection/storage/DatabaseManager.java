@@ -14,9 +14,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Veritabanı bağlantısını ve işlemlerini yöneten sınıf.
- */
 public class DatabaseManager {
     private final JavaPlugin plugin;
     private final Logger logger;
@@ -37,19 +34,12 @@ public class DatabaseManager {
     private final String DELETE_ALL_RECORDS;
     private final String DELETE_OLD_RECORDS;
     
-    /**
-     * DatabaseManager örneği oluşturur.
-     * 
-     * @param plugin Eklenti nesnesi
-     * @param config Yapılandırma dosyası
-     */
     public DatabaseManager(JavaPlugin plugin, FileConfiguration config) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
         this.storageType = config.getString("statistics.storage-type", "file").toLowerCase();
         this.prefix = config.getString("statistics.mysql.table-prefix", "tpd_");
         
-        // SQL sorguları hazırla
         CREATE_PLAYERS_TABLE = "CREATE TABLE IF NOT EXISTS " + prefix + "players (" +
                 "id INT AUTO_INCREMENT PRIMARY KEY, " +
                 "uuid VARCHAR(36) UNIQUE NOT NULL, " +
@@ -99,11 +89,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * MySQL bağlantısını kurar.
-     * 
-     * @param config Yapılandırma dosyası
-     */
     private void setupMySQLConnection(FileConfiguration config) {
         long startTime = System.currentTimeMillis();
         
@@ -114,39 +99,35 @@ public class DatabaseManager {
         String password = config.getString("statistics.mysql.password", "");
         
         try {
-            // CPU çekirdek sayısına göre bağlantı havuzu boyutunu ayarla
             int availableCores = Runtime.getRuntime().availableProcessors();
-            int poolSize = Math.min(availableCores * 2, 20); // Maksimum 20 bağlantı
+            int poolSize = Math.min(availableCores * 2, 20);
             
             HikariConfig hikariConfig = new HikariConfig();
             
-            // Temel bağlantı parametreleri
             hikariConfig.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + 
                     "?useSSL=false&useUnicode=true&characterEncoding=utf8" +
-                    "&rewriteBatchedStatements=true" + // Toplu sorgular için optimizasyon
-                    "&useLocalSessionState=true" + // Oturum durumu için optimizasyon
-                    "&cacheServerConfiguration=true" + // Sunucu yapılandırması önbellekleme
-                    "&cacheResultSetMetadata=true" + // Sonuç kümesi metadata önbellekleme
-                    "&elideSetAutoCommits=true" + // AutoCommit performans optimizasyonu
-                    "&maintainTimeStats=false" + // JDBC sürücüsü zaman istatistiklerini devre dışı bırak
-                    "&useCompression=true"); // Ağ trafiği sıkıştırması (yüksek gecikme ağlarında faydalı)
+                    "&rewriteBatchedStatements=true" +
+                    "&useLocalSessionState=true" +
+                    "&cacheServerConfiguration=true" +
+                    "&cacheResultSetMetadata=true" +
+                    "&elideSetAutoCommits=true" +
+                    "&maintainTimeStats=false" +
+                    "&useCompression=true");
             
             hikariConfig.setUsername(username);
             hikariConfig.setPassword(password);
             
-            // Bağlantı havuzu parametreleri
             hikariConfig.setMaximumPoolSize(poolSize);
-            hikariConfig.setMinimumIdle(Math.max(2, poolSize / 4)); // En az 2 veya pool'un 1/4'ü
-            hikariConfig.setConnectionTimeout(10000); // 10 saniye (varsayılan 30)
-            hikariConfig.setIdleTimeout(300000); // 5 dakika (varsayılan 10 dakika)
-            hikariConfig.setMaxLifetime(900000); // 15 dakika (varsayılan 30 dakika)
+            hikariConfig.setMinimumIdle(Math.max(2, poolSize / 4));
+            hikariConfig.setConnectionTimeout(10000);
+            hikariConfig.setIdleTimeout(300000);
+            hikariConfig.setMaxLifetime(900000);
             hikariConfig.setAutoCommit(true);
-            hikariConfig.setKeepaliveTime(60000); // 60 saniye (boşta kalan bağlantıları canlı tut)
+            hikariConfig.setKeepaliveTime(60000);
             
-            // Performans ayarları
             hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
-            hikariConfig.addDataSourceProperty("prepStmtCacheSize", "500"); // Önceki 250
-            hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "4096"); // Önceki 2048
+            hikariConfig.addDataSourceProperty("prepStmtCacheSize", "500");
+            hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "4096");
             hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
             hikariConfig.addDataSourceProperty("useLocalSessionState", "true");
             hikariConfig.addDataSourceProperty("alwaysSendSetIsolation", "false");
@@ -155,23 +136,17 @@ public class DatabaseManager {
             hikariConfig.addDataSourceProperty("metadataCacheSize", "1024");
             hikariConfig.addDataSourceProperty("tcpKeepAlive", "true");
             
-            // Bağlantı testleri
             hikariConfig.setConnectionTestQuery("SELECT 1");
-            hikariConfig.setLeakDetectionThreshold(60000); // 60 saniye sonra sızıntı uyarısı
+            hikariConfig.setLeakDetectionThreshold(60000);
             
-            // Havuz adı
             hikariConfig.setPoolName("TPD-MySQL-Pool");
             
-            // HikariCP JMX izleme (opsiyonel)
             hikariConfig.setRegisterMbeans(true);
             
-            // Yeni veri kaynağını oluştur
             dataSource = new HikariDataSource(hikariConfig);
             
-            // Tabloları oluştur
             boolean tablesCreated = createTables();
             
-            // Veritabanı optimizasyonlarını kontrol et ve uygula
             if (tablesCreated) {
                 optimizeTables();
             }
@@ -189,11 +164,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Veritabanı tablolarını oluşturur.
-     * 
-     * @return Tablolar başarıyla oluşturulduysa true
-     */
     private boolean createTables() {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
@@ -210,21 +180,14 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Veritabanı tablolarını optimize eder.
-     * İndeksler ekler ve tablo istatistiklerini günceller.
-     */
     private void optimizeTables() {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             
-            // İndeksleri kontrol et ve gerekirse ekle
             try {
-                // Oyuncu tablosu için indeksler
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_" + prefix + "players_uuid ON " + 
                            prefix + "players (uuid)");
                 
-                // Kayıtlar tablosu için indeksler
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_" + prefix + "records_player_id ON " + 
                            prefix + "records (player_id)");
                 stmt.execute("CREATE INDEX IF NOT EXISTS idx_" + prefix + "records_timestamp ON " + 
@@ -234,18 +197,15 @@ public class DatabaseManager {
                 
                 logger.info("Veritabanı indeksleri başarıyla oluşturuldu");
             } catch (SQLException e) {
-                // IF NOT EXISTS MySQL 5.7+ içindir, daha eski versiyonlar için hata verebilir
                 logger.warning("İndeksler oluşturulurken hata: " + e.getMessage() + 
                              " - Bu veritabanı sürümünde indeks oluşturma sözdizimi desteklenmeyebilir");
             }
             
-            // Tablo istatistiklerini güncelle
             try {
                 stmt.execute("ANALYZE TABLE " + prefix + "players");
                 stmt.execute("ANALYZE TABLE " + prefix + "records");
                 logger.info("Tablo istatistikleri güncellendi");
             } catch (SQLException e) {
-                // Bazı MySQL versiyonları veya farklı veritabanları desteklemeyebilir
                 logger.fine("Tablo istatistikleri güncellenemedi: " + e.getMessage());
             }
             
@@ -254,9 +214,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Veritabanı bağlantısını kapatır.
-     */
     public void close() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
@@ -264,12 +221,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Veritabanı bağlantısı alır.
-     * 
-     * @return Connection nesnesi
-     * @throws SQLException Bağlantı hatası
-     */
     private Connection getConnection() throws SQLException {
         if (dataSource == null || dataSource.isClosed()) {
             throw new SQLException("Veritabanı bağlantısı kullanılamıyor.");
@@ -277,24 +228,15 @@ public class DatabaseManager {
         return dataSource.getConnection();
     }
     
-    /**
-     * Bir oyuncu kaydı ekler veya günceller, ve oyuncu ID'sini döndürür.
-     * 
-     * @param playerId Oyuncu UUID
-     * @param playerName Oyuncu adı
-     * @return Oyuncu veritabanı ID'si
-     */
     private int ensurePlayerExists(UUID playerId, String playerName) {
         try (Connection conn = getConnection();
              PreparedStatement insertStmt = conn.prepareStatement(INSERT_PLAYER);
              PreparedStatement selectStmt = conn.prepareStatement(GET_PLAYER_BY_UUID)) {
             
-            // Oyuncuyu ekle veya güncelle
             insertStmt.setString(1, playerId.toString());
             insertStmt.setString(2, playerName);
             insertStmt.executeUpdate();
             
-            // Oyuncu ID'sini al
             selectStmt.setString(1, playerId.toString());
             try (ResultSet rs = selectStmt.executeQuery()) {
                 if (rs.next()) {
@@ -310,12 +252,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Yeni bir küfür kaydı ekler.
-     * 
-     * @param record Eklenecek küfür kaydı
-     * @return Başarılı ise true
-     */
     public boolean addRecord(@NotNull ProfanityRecord record) {
         if (!storageType.equals("mysql") || dataSource == null) {
             return false;
@@ -331,26 +267,21 @@ public class DatabaseManager {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(INSERT_RECORD)) {
             
-            // Sorguyu hazırla
             stmt.setInt(1, playerId);
             stmt.setString(2, record.getWord());
             stmt.setString(3, record.getCategory());
             stmt.setInt(4, record.getSeverityLevel());
             stmt.setString(5, record.getOriginalMessage());
             
-            // Tespit edilen kelimeler JSON formatında saklanırsa daha iyi olabilir
-            // Ancak basitlik için virgülle ayrılmış listeyi kullanıyoruz
             stmt.setString(6, String.join(",", record.getDetectedWords()));
             
             stmt.setString(7, record.getTimestamp().format(dateFormatter));
             stmt.setBoolean(8, record.isAiDetected());
             
-            // Sorguyu çalıştır
             boolean result = stmt.executeUpdate() > 0;
             
-            // Çok fazla log basma, ancak debug açıksa veya sorgu yavaşsa logla
             long queryTime = System.currentTimeMillis() - startTime;
-            if (queryTime > 100) {  // 100ms'den uzun süren sorgular için uyarı
+            if (queryTime > 100) {
                 logger.fine("Yavaş küfür kaydı ekleme sorgusu: " + queryTime + "ms");
             }
             
@@ -362,13 +293,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Birden fazla küfür kaydını toplu olarak ekler. 
-     * Büyük veri setleri için tekli kaydetmeden çok daha verimlidir.
-     *
-     * @param records Eklenecek kayıtlar listesi
-     * @return Eklenen kayıt sayısı
-     */
     public int addRecordsBatch(List<ProfanityRecord> records) {
         if (!storageType.equals("mysql") || dataSource == null || records == null || records.isEmpty()) {
             return 0;
@@ -381,27 +305,22 @@ public class DatabaseManager {
              PreparedStatement selectPlayerStmt = conn.prepareStatement(GET_PLAYER_BY_UUID);
              PreparedStatement recordStmt = conn.prepareStatement(INSERT_RECORD)) {
             
-            // Auto-commit'i devre dışı bırak
             conn.setAutoCommit(false);
             
-            // Oyuncu ID'lerini önbelleğe al
             Map<UUID, Integer> playerIdCache = new HashMap<>();
             
             for (ProfanityRecord record : records) {
-                // Oyuncu ID'sini bul veya oluştur
                 int playerId;
                 UUID playerUUID = record.getPlayerId();
                 
                 if (playerIdCache.containsKey(playerUUID)) {
                     playerId = playerIdCache.get(playerUUID);
                 } else {
-                    // Önce mevcut oyuncuyu bul
                     selectPlayerStmt.setString(1, playerUUID.toString());
                     try (ResultSet rs = selectPlayerStmt.executeQuery()) {
                         if (rs.next()) {
                             playerId = rs.getInt("id");
                         } else {
-                            // Yeni oyuncu ekle
                             playerStmt.setString(1, playerUUID.toString());
                             playerStmt.setString(2, record.getPlayerName());
                             playerStmt.executeUpdate();
@@ -416,11 +335,9 @@ public class DatabaseManager {
                         }
                     }
                     
-                    // Önbelleğe ekle
                     playerIdCache.put(playerUUID, playerId);
                 }
                 
-                // Kayıt sorgusunu doldur ve batch'e ekle
                 recordStmt.setInt(1, playerId);
                 recordStmt.setString(2, record.getWord());
                 recordStmt.setString(3, record.getCategory());
@@ -431,20 +348,16 @@ public class DatabaseManager {
                 recordStmt.setBoolean(8, record.isAiDetected());
                 recordStmt.addBatch();
                 
-                // Her 100 kayıtta bir batch'i çalıştır
                 if (++addedCount % 100 == 0) {
                     recordStmt.executeBatch();
                     recordStmt.clearBatch();
                 }
             }
             
-            // Kalan batch'i çalıştır
             int[] results = recordStmt.executeBatch();
             
-            // İşlemi tamamla
             conn.commit();
             
-            // Eklenen kayıt sayısını say
             addedCount = 0;
             for (int result : results) {
                 if (result > 0) {
@@ -460,12 +373,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Bir oyuncunun tüm küfür kayıtlarını getirir.
-     * 
-     * @param playerId Oyuncu UUID
-     * @return Oyuncunun küfür kayıtları listesi
-     */
     public List<ProfanityRecord> getPlayerRecords(UUID playerId) {
         if (!storageType.equals("mysql") || dataSource == null) {
             return new ArrayList<>();
@@ -491,11 +398,6 @@ public class DatabaseManager {
         return records;
     }
     
-    /**
-     * Tüm oyuncuların küfür kayıtlarını getirir.
-     * 
-     * @return Oyuncu UUID -> Küfür kayıtları listesi şeklinde map
-     */
     public Map<UUID, List<ProfanityRecord>> getAllRecords() {
         if (!storageType.equals("mysql") || dataSource == null) {
             return new HashMap<>();
@@ -521,12 +423,6 @@ public class DatabaseManager {
         return records;
     }
     
-    /**
-     * Bir oyuncunun tüm küfür kayıtlarını temizler.
-     * 
-     * @param playerId Oyuncu UUID
-     * @return Başarılı ise true, kayıt yoksa veya hata oluştuysa false
-     */
     public boolean clearPlayerRecords(UUID playerId) {
         if (!storageType.equals("mysql") || dataSource == null) {
             return false;
@@ -535,17 +431,13 @@ public class DatabaseManager {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(DELETE_PLAYER_RECORDS)) {
             
-            // Auto-commit'i devre dışı bırak
             conn.setAutoCommit(false);
             
-            // Sorguyu hazırla ve çalıştır
             stmt.setString(1, playerId.toString());
             int affectedRows = stmt.executeUpdate();
             
-            // İşlemi tamamla
             conn.commit();
             
-            // Log işlemleri
             if (affectedRows > 0) {
                 logger.info(playerId + " ID'li oyuncunun " + affectedRows + " kaydı silindi");
             } else {
@@ -560,11 +452,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Tüm küfür kayıtlarını temizler.
-     * 
-     * @return Başarılı ise true
-     */
     public boolean clearAllRecords() {
         if (!storageType.equals("mysql") || dataSource == null) {
             return false;
@@ -581,12 +468,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Belirli bir günden eski kayıtları temizler.
-     * 
-     * @param days Gün sayısı
-     * @return Başarılı ise true
-     */
     public boolean cleanupOldData(int days) {
         if (!storageType.equals("mysql") || dataSource == null || days <= 0) {
             return false;
@@ -613,13 +494,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * ResultSet'ten bir ProfanityRecord nesnesi oluşturur.
-     * 
-     * @param rs ResultSet
-     * @return ProfanityRecord nesnesi
-     * @throws SQLException SQL hatası
-     */
     private ProfanityRecord extractRecordFromResultSet(ResultSet rs) throws SQLException {
         UUID playerId = UUID.fromString(rs.getString("uuid"));
         String playerName = rs.getString("player_name");
@@ -632,7 +506,6 @@ public class DatabaseManager {
         LocalDateTime timestamp = LocalDateTime.parse(rs.getString("timestamp"), dateFormatter);
         boolean aiDetected = rs.getBoolean("ai_detected");
         
-        // Özel bir constructor oluşturuyoruz timestamp için
         return new ProfanityRecord(
                 playerId, playerName, word, category, severityLevel,
                 detectedWords, originalMessage, aiDetected, timestamp);

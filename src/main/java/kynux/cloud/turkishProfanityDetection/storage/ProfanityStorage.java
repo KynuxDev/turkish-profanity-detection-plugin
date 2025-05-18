@@ -17,9 +17,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-/**
- * Küfür kayıtlarını saklamak ve yönetmek için kullanılan sınıf.
- */
 public class ProfanityStorage {
     private final JavaPlugin plugin;
     private final Logger logger;
@@ -29,11 +26,6 @@ public class ProfanityStorage {
     private final File storageFile;
     private final DatabaseManager databaseManager;
     
-    /**
-     * Depolama servisini başlatır.
-     *
-     * @param plugin Eklenti ana sınıfı
-     */
     public ProfanityStorage(@NotNull JavaPlugin plugin) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
@@ -42,10 +34,8 @@ public class ProfanityStorage {
         this.storageType = config.getString("statistics.storage-type", "mysql").toLowerCase();
         this.dataRetentionDays = config.getInt("statistics.data-retention-days", 30);
         
-        // Veritabanı yöneticisini oluştur
         this.databaseManager = new DatabaseManager(plugin, config);
         
-        // Depolama dosyası
         File dataFolder = plugin.getDataFolder();
         if (!dataFolder.exists() && !dataFolder.mkdirs()) {
             logger.severe("Eklenti veri klasörü oluşturulamadı!");
@@ -53,50 +43,31 @@ public class ProfanityStorage {
         
         this.storageFile = new File(dataFolder, "profanity_records.dat");
         
-        // Veriyi yükle
         loadData();
         
-        // Periyodik temizlik işlemi
         if (dataRetentionDays > 0) {
-            plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, this::cleanupOldData, 20 * 60 * 60, 20 * 60 * 60 * 24); // Günde bir kez
+            plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, this::cleanupOldData, 20 * 60 * 60, 20 * 60 * 60 * 24);
         }
         
-        // Başlangıç ​​mesajı
         logger.info("Profanity Storage başlatıldı. Depolama tipi: " + storageType);
     }
     
-    /**
-     * Yeni bir küfür kaydı ekler.
-     *
-     * @param record Eklenecek küfür kaydı
-     */
     public void addRecord(@NotNull ProfanityRecord record) {
         UUID playerId = record.getPlayerId();
         
-        // Bellekteki kayıtları güncelle
         playerRecords.computeIfAbsent(playerId, k -> new ArrayList<>()).add(record);
         
-        // Depolama metoduna göre kaydet
         if (storageType.equals("mysql")) {
-            // Asenkron olarak veritabanına kaydet
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                 databaseManager.addRecord(record);
             });
         } else {
-            // Asenkron olarak dosyaya kaydet
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this::saveData);
         }
     }
     
-    /**
-     * Bir oyuncunun tüm küfür kayıtlarını getirir.
-     *
-     * @param playerId Oyuncu UUID
-     * @return Oyuncunun küfür kayıtları listesi
-     */
     public List<ProfanityRecord> getPlayerRecords(UUID playerId) {
         if (storageType.equals("mysql")) {
-            // MySQL'den al (cache kontrolü yapılabilir)
             if (!playerRecords.containsKey(playerId)) {
                 List<ProfanityRecord> dbRecords = databaseManager.getPlayerRecords(playerId);
                 if (!dbRecords.isEmpty()) {
@@ -108,17 +79,10 @@ public class ProfanityStorage {
         return playerRecords.getOrDefault(playerId, new ArrayList<>());
     }
     
-    /**
-     * Tüm oyuncuların küfür kayıtlarını getirir.
-     *
-     * @return Tüm küfür kayıtları
-     */
     public Map<UUID, List<ProfanityRecord>> getAllRecords() {
         if (storageType.equals("mysql")) {
-            // Tam bir veritabanı yüklemesi yap
             Map<UUID, List<ProfanityRecord>> dbRecords = databaseManager.getAllRecords();
             if (!dbRecords.isEmpty()) {
-                // Belleği tamamen temizle ve veritabanındaki kayıtlarla değiştir
                 playerRecords.clear();
                 playerRecords.putAll(dbRecords);
             }
@@ -127,74 +91,52 @@ public class ProfanityStorage {
         return new HashMap<>(playerRecords);
     }
     
-    /**
-     * Bir oyuncunun tüm küfür kayıtlarını temizler.
-     *
-     * @param playerId Oyuncu UUID
-     */
     public void clearPlayerRecords(UUID playerId) {
-        // Bellekten temizle
         playerRecords.remove(playerId);
         
         if (storageType.equals("mysql")) {
-            // Veritabanından da temizle
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                 databaseManager.clearPlayerRecords(playerId);
             });
         } else {
-            // Dosyaya kaydet
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this::saveData);
         }
     }
     
-    /**
-     * Tüm küfür kayıtlarını temizler.
-     */
     public void clearAllRecords() {
-        // Bellekten temizle
         playerRecords.clear();
         
         if (storageType.equals("mysql")) {
-            // Veritabanından da temizle
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                 databaseManager.clearAllRecords();
             });
         } else {
-            // Dosyaya kaydet
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, this::saveData);
         }
     }
     
-    /**
-     * Belirli bir süre öncesine ait kayıtları temizler.
-     */
     private void cleanupOldData() {
         if (dataRetentionDays <= 0) {
-            return; // Sınırsız saklama, temizlik yapma
+            return;
         }
         
         LocalDateTime cutoffDate = LocalDateTime.now().minus(dataRetentionDays, ChronoUnit.DAYS);
         
         if (storageType.equals("mysql")) {
-            // Veritabanından temizle
             databaseManager.cleanupOldData(dataRetentionDays);
             
-            // Tam bir veritabanı yüklemesi yaparak belleği güncelle
             Map<UUID, List<ProfanityRecord>> dbRecords = databaseManager.getAllRecords();
             playerRecords.clear();
             playerRecords.putAll(dbRecords);
         } else {
-            // Dosya tabanlı temizlik
             boolean dataChanged = false;
             
-            // Her oyuncu için kayıtları kontrol et
             for (UUID playerId : new HashSet<>(playerRecords.keySet())) {
                 List<ProfanityRecord> records = playerRecords.get(playerId);
                 
                 if (records != null) {
                     int initialSize = records.size();
                     
-                    // Kesim tarihinden önce olan kayıtları filtrele
                     List<ProfanityRecord> filteredRecords = records.stream()
                             .filter(record -> record.getTimestamp().isAfter(cutoffDate))
                             .collect(Collectors.toList());
@@ -204,14 +146,12 @@ public class ProfanityStorage {
                         dataChanged = true;
                     }
                     
-                    // Eğer hiç kayıt kalmadıysa, oyuncuyu listeden kaldır
                     if (filteredRecords.isEmpty()) {
                         playerRecords.remove(playerId);
                     }
                 }
             }
             
-            // Eğer veri değiştiyse kaydet
             if (dataChanged) {
                 saveData();
                 logger.info(dataRetentionDays + " günden eski küfür kayıtları temizlendi.");
@@ -219,11 +159,7 @@ public class ProfanityStorage {
         }
     }
     
-    /**
-     * Verileri disk üzerine kaydeder.
-     */
     private void saveData() {
-        // MySQL'de saklıyorsak bu metodu kullanmaya gerek yok
         if (storageType.equals("mysql")) {
             return;
         }
@@ -236,13 +172,9 @@ public class ProfanityStorage {
         }
     }
     
-    /**
-     * Verileri diskten yükler.
-     */
     @SuppressWarnings("unchecked")
     private void loadData() {
         if (storageType.equals("mysql")) {
-            // Veritabanından yükle
             Map<UUID, List<ProfanityRecord>> dbRecords = databaseManager.getAllRecords();
             playerRecords.clear();
             playerRecords.putAll(dbRecords);
@@ -250,7 +182,6 @@ public class ProfanityStorage {
             return;
         }
         
-        // Dosyadan yükle
         if (!storageFile.exists()) {
             logger.info("Küfür kayıtları dosyası bulunamadı. Yeni dosya oluşturulacak.");
             return;
@@ -265,32 +196,19 @@ public class ProfanityStorage {
         }
     }
     
-    /**
-     * Yapılandırma değiştiğinde verileri yeniden yükler.
-     */
     public void reload() {
         playerRecords.clear();
         loadData();
     }
     
-    /**
-     * Eklenti kapatılırken yapılacak işlemler.
-     */
     public void shutdown() {
-        // Veritabanı bağlantısını kapat
         if (storageType.equals("mysql")) {
             databaseManager.close();
         } else {
-            // Son kayıtları dosyaya yaz
             saveData();
         }
     }
     
-    /**
-     * Veriyi serileştirilmiş bir formata dönüştürür.
-     *
-     * @return Serileştirilmiş veri Map'i
-     */
     private Map<String, Object> serializeData() {
         Map<String, Object> data = new HashMap<>();
         data.put("version", 1);
@@ -323,14 +241,8 @@ public class ProfanityStorage {
         return data;
     }
     
-    /**
-     * Serileştirilmiş veriyi ProfanityRecord nesnelerine dönüştürür.
-     *
-     * @param data Serileştirilmiş veri
-     */
     @SuppressWarnings("unchecked")
     private void deserializeData(Map<String, Object> data) {
-        // Şu an için temel deserializasyon işlemi - ileride genişletilebilir
         if (data.containsKey("records")) {
             Map<String, List<Map<String, Object>>> records = (Map<String, List<Map<String, Object>>>) data.get("records");
             
