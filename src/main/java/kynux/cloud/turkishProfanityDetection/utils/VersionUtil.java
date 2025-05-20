@@ -11,11 +11,29 @@ public class VersionUtil {
     private static final int MINOR_VERSION;
     
     static {
-        String version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
-        String[] versionParts = version.substring(1).split("_");
+        String versionString = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+        String[] versionParts = versionString.substring(1).split("_");
         
-        MAJOR_VERSION = Integer.parseInt(versionParts[0]);
-        MINOR_VERSION = Integer.parseInt(versionParts[1]);
+        int major = 1; 
+        int minor = 0; 
+
+        if (versionParts.length > 0) {
+            try {
+                major = Integer.parseInt(versionParts[0]);
+            } catch (NumberFormatException e) {
+                Bukkit.getLogger().warning("[TurkishProfanityDetection] Failed to parse major version from: " + versionParts[0]);
+            }
+        }
+        if (versionParts.length > 1) {
+            try {
+                minor = Integer.parseInt(versionParts[1]);
+            } catch (NumberFormatException e) {
+                Bukkit.getLogger().warning("[TurkishProfanityDetection] Failed to parse minor version from: " + versionParts[1]);
+            }
+        }
+        
+        MAJOR_VERSION = major;
+        MINOR_VERSION = minor;
     }
     
     public static int getMajorVersion() {
