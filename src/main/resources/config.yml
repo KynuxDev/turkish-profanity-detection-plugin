@@ -4,7 +4,7 @@
 # Bu bölüm, eklentinin tüm küfür ve uygunsuz içerik analizlerini yönetir.
 kynux_api:
   # Kynux AI Chat Completion API endpoint'i
-  url: "https://api.kynux.cloud/api/v1/chat/completion"
+  url: "https://api.kynux.cloud/api/v1/chat/completions"
   # Kynux AI API anahtarınız. Bu alanı DOLDURMANIZ GEREKİR.
   # API anahtarınızı almak için: https://api.kynux.cloud/
   key: "" 
