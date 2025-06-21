@@ -14,9 +14,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Veritabanı bağlantısını ve işlemlerini yöneten sınıf.
- */
 public class DatabaseManager {
     private final JavaPlugin plugin;
     private final Logger logger;
@@ -25,7 +22,6 @@ public class DatabaseManager {
     private HikariDataSource dataSource;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    // SQL sorgular
     private final String CREATE_PLAYERS_TABLE;
     private final String CREATE_RECORDS_TABLE;
     private final String INSERT_PLAYER;
@@ -37,19 +33,12 @@ public class DatabaseManager {
     private final String DELETE_ALL_RECORDS;
     private final String DELETE_OLD_RECORDS;
     
-    /**
-     * DatabaseManager örneği oluşturur.
-     * 
-     * @param plugin Eklenti nesnesi
-     * @param config Yapılandırma dosyası
-     */
     public DatabaseManager(JavaPlugin plugin, FileConfiguration config) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
         this.storageType = config.getString("statistics.storage-type", "file").toLowerCase();
         this.prefix = config.getString("statistics.mysql.table-prefix", "tpd_");
         
-        // SQL sorguları hazırla
         CREATE_PLAYERS_TABLE = "CREATE TABLE IF NOT EXISTS " + prefix + "players (" +
                 "id INT AUTO_INCREMENT PRIMARY KEY, " +
                 "uuid VARCHAR(36) UNIQUE NOT NULL, " +
@@ -98,12 +87,7 @@ public class DatabaseManager {
             setupMySQLConnection(config);
         }
     }
-    
-    /**
-     * MySQL bağlantısını kurar.
-     * 
-     * @param config Yapılandırma dosyası
-     */
+
     private void setupMySQLConnection(FileConfiguration config) {
         String host = config.getString("statistics.mysql.host", "localhost");
         int port = config.getInt("statistics.mysql.port", 3306);
@@ -135,10 +119,7 @@ public class DatabaseManager {
             e.printStackTrace();
         }
     }
-    
-    /**
-     * Veritabanı tablolarını oluşturur.
-     */
+
     private void createTables() {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
@@ -152,48 +133,30 @@ public class DatabaseManager {
             e.printStackTrace();
         }
     }
-    
-    /**
-     * Veritabanı bağlantısını kapatır.
-     */
+ 
     public void close() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
             logger.info("MySQL bağlantısı kapatıldı.");
         }
     }
-    
-    /**
-     * Veritabanı bağlantısı alır.
-     * 
-     * @return Connection nesnesi
-     * @throws SQLException Bağlantı hatası
-     */
+
     private Connection getConnection() throws SQLException {
         if (dataSource == null || dataSource.isClosed()) {
             throw new SQLException("Veritabanı bağlantısı kullanılamıyor.");
         }
         return dataSource.getConnection();
     }
-    
-    /**
-     * Bir oyuncu kaydı ekler veya günceller, ve oyuncu ID'sini döndürür.
-     * 
-     * @param playerId Oyuncu UUID
-     * @param playerName Oyuncu adı
-     * @return Oyuncu veritabanı ID'si
-     */
+
     private int ensurePlayerExists(UUID playerId, String playerName) {
         try (Connection conn = getConnection();
              PreparedStatement insertStmt = conn.prepareStatement(INSERT_PLAYER);
              PreparedStatement selectStmt = conn.prepareStatement(GET_PLAYER_BY_UUID)) {
             
-            // Oyuncuyu ekle veya güncelle
             insertStmt.setString(1, playerId.toString());
             insertStmt.setString(2, playerName);
             insertStmt.executeUpdate();
             
-            // Oyuncu ID'sini al
             selectStmt.setString(1, playerId.toString());
             try (ResultSet rs = selectStmt.executeQuery()) {
                 if (rs.next()) {
@@ -208,13 +171,7 @@ public class DatabaseManager {
             return -1;
         }
     }
-    
-    /**
-     * Yeni bir küfür kaydı ekler.
-     * 
-     * @param record Eklenecek küfür kaydı
-     * @return Başarılı ise true
-     */
+
     public boolean addRecord(@NotNull ProfanityRecord record) {
         if (!storageType.equals("mysql") || dataSource == null) {
             return false;
@@ -233,7 +190,7 @@ public class DatabaseManager {
             stmt.setString(3, record.getCategory());
             stmt.setInt(4, record.getSeverityLevel());
             stmt.setString(5, record.getOriginalMessage());
-            stmt.setString(6, String.join(",", record.getDetectedWords())); // Basit bir şekilde virgülle ayrılmış liste
+            stmt.setString(6, String.join(",", record.getDetectedWords()));
             stmt.setString(7, record.getTimestamp().format(dateFormatter));
             stmt.setBoolean(8, record.isAiDetected());
             
@@ -244,13 +201,7 @@ public class DatabaseManager {
             return false;
         }
     }
-    
-    /**
-     * Bir oyuncunun tüm küfür kayıtlarını getirir.
-     * 
-     * @param playerId Oyuncu UUID
-     * @return Oyuncunun küfür kayıtları listesi
-     */
+
     public List<ProfanityRecord> getPlayerRecords(UUID playerId) {
         if (!storageType.equals("mysql") || dataSource == null) {
             return new ArrayList<>();
@@ -275,12 +226,7 @@ public class DatabaseManager {
         
         return records;
     }
-    
-    /**
-     * Tüm oyuncuların küfür kayıtlarını getirir.
-     * 
-     * @return Oyuncu UUID -> Küfür kayıtları listesi şeklinde map
-     */
+
     public Map<UUID, List<ProfanityRecord>> getAllRecords() {
         if (!storageType.equals("mysql") || dataSource == null) {
             return new HashMap<>();
@@ -305,13 +251,7 @@ public class DatabaseManager {
         
         return records;
     }
-    
-    /**
-     * Bir oyuncunun tüm küfür kayıtlarını temizler.
-     * 
-     * @param playerId Oyuncu UUID
-     * @return Başarılı ise true
-     */
+
     public boolean clearPlayerRecords(UUID playerId) {
         if (!storageType.equals("mysql") || dataSource == null) {
             return false;
@@ -328,12 +268,7 @@ public class DatabaseManager {
             return false;
         }
     }
-    
-    /**
-     * Tüm küfür kayıtlarını temizler.
-     * 
-     * @return Başarılı ise true
-     */
+
     public boolean clearAllRecords() {
         if (!storageType.equals("mysql") || dataSource == null) {
             return false;
@@ -350,12 +285,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * Belirli bir günden eski kayıtları temizler.
-     * 
-     * @param days Gün sayısı
-     * @return Başarılı ise true
-     */
     public boolean cleanupOldData(int days) {
         if (!storageType.equals("mysql") || dataSource == null || days <= 0) {
             return false;
@@ -382,13 +311,6 @@ public class DatabaseManager {
         }
     }
     
-    /**
-     * ResultSet'ten bir ProfanityRecord nesnesi oluşturur.
-     * 
-     * @param rs ResultSet
-     * @return ProfanityRecord nesnesi
-     * @throws SQLException SQL hatası
-     */
     private ProfanityRecord extractRecordFromResultSet(ResultSet rs) throws SQLException {
         UUID playerId = UUID.fromString(rs.getString("uuid"));
         String playerName = rs.getString("player_name");
@@ -401,7 +323,6 @@ public class DatabaseManager {
         LocalDateTime timestamp = LocalDateTime.parse(rs.getString("timestamp"), dateFormatter);
         boolean aiDetected = rs.getBoolean("ai_detected");
         
-        // Özel bir constructor oluşturuyoruz timestamp için
         return new ProfanityRecord(
                 playerId, playerName, word, category, severityLevel,
                 detectedWords, originalMessage, aiDetected, timestamp);

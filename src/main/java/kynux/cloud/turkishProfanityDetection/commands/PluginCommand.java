@@ -18,20 +18,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Eklentinin komutlarını işleyen sınıf.
- */
+
 public class PluginCommand implements CommandExecutor, TabCompleter {
     private final TurkishProfanityDetection plugin;
     private final String permissionCommands;
     private final String permissionAdmin;
     private final String permissionStats;
 
-    /**
-     * Komut işleyiciyi başlatır.
-     *
-     * @param plugin Eklenti ana sınıfı
-     */
     public PluginCommand(@NotNull TurkishProfanityDetection plugin) {
         this.plugin = plugin;
         this.permissionCommands = plugin.getConfig().getString("permissions.commands", "turkishprofanitydetection.commands");
@@ -41,20 +34,17 @@ public class PluginCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        // Yetki kontrolü
         if (!sender.hasPermission(permissionCommands)) {
             MessageUtils.sendMessage(sender, plugin.getConfig().getString("messages.prefix") +
                     plugin.getConfig().getString("messages.no-permission", "&cBu komutu kullanmak için yetkiniz yok."));
             return true;
         }
 
-        // Parametresiz komut - yardım menüsü
         if (args.length == 0) {
             showHelp(sender);
             return true;
         }
 
-        // Alt komutları işle
         switch (args[0].toLowerCase()) {
             case "reload":
                 plugin.reloadPlugin();
@@ -181,11 +171,6 @@ public class PluginCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    /**
-     * Yardım menüsünü gösterir.
-     *
-     * @param sender Komut gönderen
-     */
     private void showHelp(CommandSender sender) {
         String prefix = plugin.getConfig().getString("messages.prefix");
         
@@ -196,7 +181,6 @@ public class PluginCommand implements CommandExecutor, TabCompleter {
         MessageUtils.sendMessage(sender, prefix + "&f/tpd reload &7- Eklentiyi yeniden yükler");
         MessageUtils.sendMessage(sender, prefix + "&f/tpd version &7- Eklenti sürümünü gösterir");
         
-        // Admin komutları
         if (sender.hasPermission(permissionAdmin)) {
             MessageUtils.sendMessage(sender, "&8&m----------------------------------------");
             MessageUtils.sendMessage(sender, prefix + "&c&lAdmin Komutları:");
@@ -212,41 +196,33 @@ public class PluginCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
             List<String> completions = new ArrayList<>(Arrays.asList("help", "reload", "version"));
-            
-            // Admin komutları için yetki kontrolü
             if (sender.hasPermission(permissionAdmin)) {
                 completions.add("admin");
                 completions.add("stats");
                 completions.add("clear");
             }
             
-            // Yetki kontrolü
             if (!sender.hasPermission(permissionCommands)) {
                 return new ArrayList<>();
             }
             
-            // Başlangıç filtreleme
             String arg = args[0].toLowerCase();
             return completions.stream()
                     .filter(s -> s.toLowerCase().startsWith(arg))
                     .collect(Collectors.toList());
         } else if (args.length == 2) {
-            // İkinci parametre için tamamlama
             if (args[0].equalsIgnoreCase("stats") || args[0].equalsIgnoreCase("clear")) {
                 if (sender.hasPermission(permissionAdmin)) {
                     List<String> completions = new ArrayList<>();
                     
-                    // Tüm çevrimiçi oyuncuları ekle
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         completions.add(player.getName());
                     }
                     
-                    // "clear" komutu için "all" seçeneğini ekle
                     if (args[0].equalsIgnoreCase("clear")) {
                         completions.add("all");
                     }
                     
-                    // Başlangıç filtreleme
                     String arg = args[1].toLowerCase();
                     return completions.stream()
                             .filter(s -> s.toLowerCase().startsWith(arg))

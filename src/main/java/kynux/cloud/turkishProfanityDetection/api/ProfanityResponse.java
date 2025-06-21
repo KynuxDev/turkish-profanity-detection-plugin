@@ -5,19 +5,13 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * API'den dönen küfür tespiti yanıtı için model sınıfı.
- */
 public class ProfanityResponse {
     private boolean success;
     private Result result;
     private String message;
     private String error;
     private ErrorType errorType;
-    
-    /**
-     * Hata türlerini tanımlayan enum.
-     */
+ 
     public enum ErrorType {
         NONE,
         TIMEOUT,
@@ -29,20 +23,13 @@ public class ProfanityResponse {
         UNKNOWN
     }
     
-    /**
-     * Varsayılan yapıcı - başarısız bir yanıt oluşturur.
-     */
+
     public ProfanityResponse() {
         this.success = false;
         this.errorType = ErrorType.UNKNOWN;
     }
     
-    /**
-     * Zaman aşımı hatası için statik yardımcı metot.
-     * 
-     * @param message Hata mesajı
-     * @return Yapılandırılmış hata yanıtı
-     */
+
     public static ProfanityResponse createTimeoutError(String message) {
         ProfanityResponse response = new ProfanityResponse();
         response.success = false;
@@ -52,12 +39,6 @@ public class ProfanityResponse {
         return response;
     }
     
-    /**
-     * Bağlantı hatası için statik yardımcı metot.
-     * 
-     * @param message Hata mesajı
-     * @return Yapılandırılmış hata yanıtı
-     */
     public static ProfanityResponse createConnectionError(String message) {
         ProfanityResponse response = new ProfanityResponse();
         response.success = false;
@@ -67,12 +48,6 @@ public class ProfanityResponse {
         return response;
     }
     
-    /**
-     * Genel API hatası için statik yardımcı metot.
-     * 
-     * @param message Hata mesajı
-     * @return Yapılandırılmış hata yanıtı
-     */
     public static ProfanityResponse createApiError(String message) {
         ProfanityResponse response = new ProfanityResponse();
         response.success = false;
@@ -82,12 +57,6 @@ public class ProfanityResponse {
         return response;
     }
     
-    /**
-     * Sunucu hatası için statik yardımcı metot.
-     * 
-     * @param statusCode HTTP durum kodu
-     * @return Yapılandırılmış hata yanıtı
-     */
     public static ProfanityResponse createServerError(int statusCode) {
         ProfanityResponse response = new ProfanityResponse();
         response.success = false;
@@ -96,12 +65,7 @@ public class ProfanityResponse {
         response.errorType = ErrorType.SERVER_ERROR;
         return response;
     }
-    
-    /**
-     * Devre kesici açıkken oluşturulan hata yanıtı
-     * 
-     * @return Yapılandırılmış hata yanıtı
-     */
+  
     public static ProfanityResponse createCircuitOpenError() {
         ProfanityResponse response = new ProfanityResponse();
         response.success = false;
@@ -114,10 +78,18 @@ public class ProfanityResponse {
     public boolean isSuccess() {
         return success;
     }
+    
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
 
     @Nullable
     public Result getResult() {
         return result;
+    }
+    
+    public void setResult(Result result) {
+        this.result = result;
     }
 
     @Nullable
@@ -130,31 +102,19 @@ public class ProfanityResponse {
         return error;
     }
     
-    /**
-     * @return Hatanın türünü döndürür
-     */
     @NotNull
     public ErrorType getErrorType() {
         return errorType != null ? errorType : ErrorType.NONE;
     }
     
-    /**
-     * @return Zaman aşımı hatası olup olmadığını kontrol eder
-     */
     public boolean isTimeoutError() {
         return errorType == ErrorType.TIMEOUT;
     }
     
-    /**
-     * @return Bağlantı hatası olup olmadığını kontrol eder
-     */
     public boolean isConnectionError() {
         return errorType == ErrorType.CONNECTION_ERROR;
     }
     
-    /**
-     * @return Devre kesici hatası olup olmadığını kontrol eder
-     */
     public boolean isCircuitOpenError() {
         return errorType == ErrorType.CIRCUIT_OPEN;
     }
@@ -167,14 +127,26 @@ public class ProfanityResponse {
         public boolean isSwear() {
             return isSwear;
         }
+        
+        public void setSwear(boolean isSwear) {
+            this.isSwear = isSwear;
+        }
 
         @Nullable
         public Details getDetails() {
             return details;
         }
+        
+        public void setDetails(Details details) {
+            this.details = details;
+        }
 
         public boolean isAiDetected() {
             return aiDetected;
+        }
+        
+        public void setAiDetected(boolean aiDetected) {
+            this.aiDetected = aiDetected;
         }
     }
 
@@ -188,19 +160,35 @@ public class ProfanityResponse {
         public String getWord() {
             return word != null ? word : "";
         }
+        
+        public void setWord(String word) {
+            this.word = word;
+        }
 
         @NotNull
         public String getCategory() {
             return category != null ? category : "bilinmeyen";
         }
+        
+        public void setCategory(String category) {
+            this.category = category;
+        }
 
         public int getSeverityLevel() {
             return severityLevel;
+        }
+        
+        public void setSeverityLevel(int severityLevel) {
+            this.severityLevel = severityLevel;
         }
 
         @NotNull
         public List<String> getDetectedWords() {
             return detectedWords != null ? detectedWords : Collections.emptyList();
+        }
+        
+        public void setDetectedWords(List<String> detectedWords) {
+            this.detectedWords = detectedWords;
         }
     }
 }

@@ -1,21 +1,24 @@
 # Turkish Profanity Detection Ayarları
 
 # API ayarları
-api:
-  url: "http://api.kynux.cloud/api/swear/detect"
+api: # APİYİ KULLANABİLMEK İÇİN BAŞVURU YAPMANIZ GEREKİYOR https://discord.gg/wysCXNThr3
+  url: "https://ai.kynux.cloud/v1/chat/completions"
+  api-key: "sk-c2dfa81d4b950eadba1ce55273e3d96830962fa1502cebdb987d04f4a8b9dd0b"
   timeout: 30000 # milisaniye cinsinden (30 saniye)
   
   # Yapay zeka ayarları
   ai:
     use: true
-    model: "gpt-4.5"
-    confidence: 0.1
+    model: "grok-3-mini"
+    temperature: 0.1
+    max-tokens: 200
 
 # Küfür tespit edildiğinde uygulanacak işlemler
 actions:
   # Mesajı engellesin mi?
-  cancel-message: true
-  
+  cancel-message: false
+  # Aslında bunun açık kalması gecikmeyi fazlaştırır o yüzden birazcık uzak durun bu ayardan
+
   # Log işlemleri
   log:
     enabled: true
@@ -41,6 +44,7 @@ actions:
       - "warn %player% Uygunsuz dil kullanımı"
       # - "tempban %player% 1h Küfür/Hakaret"
       # - "broadcast &c%player% &fküfür ettiği için uyarıldı"
+
 
 # Küfür düzeylerine göre ayrı işlemler (1 = hafif, 5 = ağır)
 severity-actions:
@@ -71,7 +75,7 @@ statistics:
   # Veri saklama süresi (gün olarak, 0 = sınırsız)
   data-retention-days: 30
   # Küfür istatistiklerini kaydetme türü (mysql, sqlite, file)
-  storage-type: "mysql"
+  storage-type: "sqlite"
   # MySQL bağlantı bilgileri (storage-type: mysql ise kullanılır)
   mysql:
     host: "localhost"
@@ -115,13 +119,6 @@ security:
     time-window: 10     # Saniye cinsinden süre
     action: "mute %player% 5m Spam"  # Limit aşıldığında uygulanacak komut
   
-  # IP kısıtlamaları - API'nin sadece belirli IP'lerden erişilmesini sağlar
-  ip-whitelist:
-    enabled: false
-    ips:
-      - "127.0.0.1"
-      - "localhost"
-
 # Mesaj ayarları
 messages:
   prefix: "&8[&cKüfür Koruması&8] &f"

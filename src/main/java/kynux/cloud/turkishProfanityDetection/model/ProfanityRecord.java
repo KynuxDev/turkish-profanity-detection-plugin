@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Bir küfür tespiti için kayıt modeli.
- */
 public class ProfanityRecord {
     private final UUID playerId;
     private final String playerName;
@@ -22,18 +19,6 @@ public class ProfanityRecord {
     
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    /**
-     * Yeni bir küfür kaydı oluşturur.
-     *
-     * @param playerId Oyuncu UUID
-     * @param playerName Oyuncu adı
-     * @param word Tespit edilen küfür kelimesi
-     * @param category Küfür kategorisi
-     * @param severityLevel Küfür şiddet seviyesi (1-5)
-     * @param detectedWords Tespit edilen tüm kelimeler listesi
-     * @param originalMessage Orijinal mesaj
-     * @param aiDetected Yapay zeka tarafından tespit edildi mi
-     */
     public ProfanityRecord(
             @NotNull UUID playerId,
             @NotNull String playerName,
@@ -54,19 +39,6 @@ public class ProfanityRecord {
         this.aiDetected = aiDetected;
     }
     
-    /**
-     * Veritabanından yüklenen bir küfür kaydı oluşturur.
-     *
-     * @param playerId Oyuncu UUID
-     * @param playerName Oyuncu adı
-     * @param word Tespit edilen küfür kelimesi
-     * @param category Küfür kategorisi
-     * @param severityLevel Küfür şiddet seviyesi (1-5)
-     * @param detectedWords Tespit edilen tüm kelimeler listesi
-     * @param originalMessage Orijinal mesaj
-     * @param aiDetected Yapay zeka tarafından tespit edildi mi
-     * @param timestamp Kaydın oluşturulma zamanı
-     */
     public ProfanityRecord(
             @NotNull UUID playerId,
             @NotNull String playerName,
