@@ -89,7 +89,7 @@
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>8.0.33</version>
+            <version>8.2.0</version>
             <scope>compile</scope>
         </dependency>
         <!-- HikariCP bağlantı havuzu - Java 8 compatible version -->
